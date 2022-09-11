@@ -38,13 +38,11 @@ defmodule Vlx.MediaLib do
 
   def keep_exts(list, exts) when is_list(list) do
     list
-    |> dbg
     |> Enum.map(fn
       # %MDir{} = d -> d
       %MDir{children: children} = d -> %MDir{d | children: keep_exts(children, exts)}
       %MFile{} = f -> f
     end)
-    |> IO.inspect(label: "mapped")
     |> Enum.filter(fn
       %MFile{ext: ext} -> ext in exts
       %MDir{children: []} -> false

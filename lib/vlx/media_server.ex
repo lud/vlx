@@ -5,15 +5,27 @@ defmodule Vlx.MediaServer do
 
   use GenServer
 
+  @pubsub_topic "media_list"
+  @pubsub Vlx.PubSub
+
   @gen_opts ~w(name timeout debug spawn_opt hibernate_after)a
 
   def start_link(opts) do
     {gen_opts, opts} = Keyword.split(opts, @gen_opts)
+    gen_opts = Keyword.put(gen_opts, :name, __MODULE__)
     GenServer.start_link(__MODULE__, opts, gen_opts)
   end
 
+  def subscribe do
+    Phoenix.PubSub.subscribe(@pubsub, @pubsub_topic)
+  end
+
+  def fetch_media! do
+    GenServer.call(__MODULE__, :fetch)
+  end
+
   defmodule S do
-    @enforce_keys [:config, :media, :subscribers]
+    @enforce_keys [:config, :media]
     defstruct @enforce_keys
   end
 
@@ -21,7 +33,24 @@ defmodule Vlx.MediaServer do
   def init(_opts) do
     config = fetch_config()
     start_schedule(config)
-    {:ok, %S{config: config, media: [], subscribers: []}}
+    {:ok, %S{config: config, media: []}}
+  end
+
+  @impl GenServer
+  def handle_info(:refresh, state) do
+    media = fetch_media(state)
+
+    if media != state.media do
+      publish_media(media)
+    end
+
+    state = %S{state | media: media}
+    {:noreply, state}
+  end
+
+  @impl GenServer
+  def handle_call(:fetch, _, state) do
+    {:reply, state.media, state}
   end
 
   defp fetch_config() do
@@ -34,24 +63,14 @@ defmodule Vlx.MediaServer do
     :timer.send_interval(int, :refresh)
   end
 
-  @impl GenServer
-  def handle_info(:refresh, state) do
-    media = fetch_media(state)
-    dbg(media)
-
-    if media != state.media do
-      publish_media(state.subscribers, media)
-    end
-
-    state = %S{state | media: media}
-    {:noreply, state}
-  end
-
   defp fetch_media(%{config: %{dir: dir}}) do
-    Vlx.MediaLib.read_dir_tree(dir)
+    dir
+    |> Vlx.MediaLib.read_dir_tree()
+    |> Vlx.MediaLib.keep_exts(["mov", "avi", "mkv", "mp3"])
+    |> Vlx.MediaLib.sort_by_name()
   end
 
-  defp publish_media(subscribers, media) do
-    Enum.each(subscribers, fn pid -> send(pid, {__MODULE__, :media, media}) end)
+  defp publish_media(media) do
+    Phoenix.PubSub.broadcast!(@pubsub, @pubsub_topic, {:media_list, media})
   end
 end

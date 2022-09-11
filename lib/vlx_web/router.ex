@@ -17,7 +17,7 @@ defmodule VlxWeb.Router do
   scope "/", VlxWeb do
     pipe_through :browser
 
-    get "/", PageController, :index
+    live "/", RCLive
   end
 
   # Other scopes may use custom stacks.

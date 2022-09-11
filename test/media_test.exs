@@ -19,10 +19,7 @@ defmodule Vlx.MediaTest do
            ] =
              "test/fixtures/tree"
              |> Vlx.MediaLib.read_dir_tree()
-             |> IO.inspect(label: "read")
              |> Vlx.MediaLib.keep_exts(["mov", "avi", "mkv", "mp3"])
-             |> IO.inspect(label: "filtered")
              |> Vlx.MediaLib.sort_by_name()
-             |> IO.inspect(label: "sorted")
   end
 end

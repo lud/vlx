@@ -10,6 +10,7 @@ defmodule Vlx.MixProject do
       compilers: Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
+      modkit: modkit(),
       deps: deps()
     ]
   end
@@ -59,5 +60,9 @@ defmodule Vlx.MixProject do
       setup: ["deps.get"],
       "assets.deploy": ["esbuild default --minify", "phx.digest"]
     ]
+  end
+
+  defp modkit do
+    [mount: [{Vlx, "lib/vlx"}, {VlxWeb, {:phoenix, "lib/vlx_web"}}]]
   end
 end
