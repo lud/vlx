@@ -1,18 +1,26 @@
 defmodule VlxWeb.Components.MediaList do
   use Phoenix.Component
 
+  alias Phoenix.LiveView.JS
   alias Vlx.MediaLib.{MFile, MDir}
+  alias VlxWeb.Components.Text
 
   def index(assigns) do
     case assigns.media do
       [] ->
         ~H"""
-        <div>No media found</div>
+        <div>
+          <Text.section_header title="Media" />
+          No media found
+        </div>
         """
 
       list ->
         ~H"""
-        <div><%= render_list_recursive(%{media: list}) %></div>
+        <div>
+          <Text.section_header title="Media" />
+          <%= render_list_recursive(%{media: list}) %>
+        </div>
         """
     end
   end
@@ -22,8 +30,8 @@ defmodule VlxWeb.Components.MediaList do
     <ul>
     <%= for item <- @media do %>
       <%= case item do %>
-      <% %MFile{name: name} -> %>
-          <li>
+      <% %MFile{name: name, path: path} -> %>
+          <li phx-click={JS.push("play", value: %{path: path})}>
             <span class="media-file"><%= name %></span>
           </li>
         <% %MDir{name: name, children: children} -> %>

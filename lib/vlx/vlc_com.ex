@@ -5,16 +5,8 @@ defmodule Vlx.VLCCom do
 
   alias :gen_tcp, as: TCP
 
-  defp config do
-    config = Map.new(Application.fetch_env!(:vlx, :vlc))
-  end
-
-  def connect do
-    connect(config())
-  end
-
-  def connect(%{port: port, password: pass}) do
-    {:ok, socket} = TCP.connect({127, 0, 0, 1}, port, [:binary, active: false])
+  def connect(%{port: port, password: pass}, timeout \\ 5000) do
+    {:ok, socket} = TCP.connect({127, 0, 0, 1}, port, [:binary, active: false], timeout)
 
     handshake(socket, pass)
   end
@@ -38,6 +30,7 @@ defmodule Vlx.VLCCom do
   end
 
   defp command(socket, com) when is_binary(com) do
+    Process.sleep(500)
     :ok = consume_prompt(socket)
     :ok = TCP.send(socket, com <> "\n")
   end
@@ -66,13 +59,44 @@ defmodule Vlx.VLCCom do
 
   def play(socket, file) do
     command(socket, ["stop", "clear", "add #{file}", "play"])
+    await_playback(socket)
+  end
+
+  def atrack(socket, id) do
+    command(socket, "atrack #{id}")
+  end
+
+  def strack(socket, id) do
+    command(socket, "strack #{id}")
+  end
+
+  def await_playback(socket) do
+    Process.sleep(500)
+    command(socket, "get_title")
+
+    case readline(socket) do
+      "" -> await_playback(socket)
+      b when is_binary(b) -> :ok
+    end
+  end
+
+  def get_title(socket) do
+    command(socket, "get_title")
+    readline(socket) |> String.trim()
   end
 
   def list_audio_tracks(socket) do
     command(socket, "atrack")
+    socket |> collect_list() |> parse_list()
+  end
 
-    socket
-    |> collect_list()
+  def list_subs_tracks(socket) do
+    command(socket, "strack")
+    socket |> collect_list() |> parse_list()
+  end
+
+  defp parse_list(items) do
+    items
     |> Enum.map(fn item ->
       [id, label] = item |> String.trim() |> String.split(" - ", parts: 2)
       id = String.to_integer(id)
@@ -85,14 +109,13 @@ defmodule Vlx.VLCCom do
 
   defp collect_list(socket) do
     "+----" <> _ = readline(socket)
-    items = collect_list_items(socket, [])
-    items |> IO.inspect(label: "items")
+    collect_list_items(socket, [])
   end
 
   defp collect_list_items(socket, acc) do
     case readline(socket) do
-      "+----" <> _ -> :lists.reverse(acc)
       "| " <> item -> collect_list_items(socket, [item | acc])
+      "+----" <> _ -> :lists.reverse(acc)
     end
   end
 end

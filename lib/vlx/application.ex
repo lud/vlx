@@ -8,15 +8,11 @@ defmodule Vlx.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      Vlx.MediaServer,
-      # Start the Telemetry supervisor
-      VlxWeb.Telemetry,
-      # Start the PubSub system
       {Phoenix.PubSub, name: Vlx.PubSub},
-      # Start the Endpoint (http/https)
+      Vlx.MediaServer,
+      Vlx.VLCRemote,
+      VlxWeb.Telemetry,
       VlxWeb.Endpoint
-      # Start a worker by calling: Vlx.Worker.start_link(arg)
-      # {Vlx.Worker, arg}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
