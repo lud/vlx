@@ -27,16 +27,29 @@ defmodule Vlx.VLCCom do
     :inet.setopts(socket, packet: :raw)
     prompt = "Password: " <> <<255, 251, 1>>
     "Password: " <> <<255, 251, 1>> = read(socket, byte_size(prompt))
-    :ok = TCP.send(socket, pass)
-
-    read(socket, 2)
+    :ok = TCP.send(socket, pass <> "\n")
 
     :inet.setopts(socket, packet: :line)
-    dump_messages(socket)
 
-    # header |> IO.inspect(label: "header")
-    # [, ] = :binary.split(header, "\n")
-    # {:ok, re} = TCP.recv(socket, 0, 5000)
+    <<255, 252, 1, 13, 10>> = readline(socket)
+    "Welcome, Master" <> _ = readline(socket)
+
+    {:ok, socket}
+  end
+
+  defp command(socket, com) when is_binary(com) do
+    :ok = consume_prompt(socket)
+    :ok = TCP.send(socket, com <> "\n")
+  end
+
+  defp consume_prompt(socket) do
+    :inet.setopts(socket, packet: :raw)
+    "> " = read(socket, 2)
+    :inet.setopts(socket, packet: :line)
+  end
+
+  defp command(socket, commands) when is_list(commands) do
+    Enum.each(commands, fn c -> command(socket, c) end)
   end
 
   defp readline(socket) do
@@ -51,8 +64,35 @@ defmodule Vlx.VLCCom do
     raw
   end
 
-  defp dump_messages(socket) do
-    readline(socket)
-    dump_messages(socket)
+  def play(socket, file) do
+    command(socket, ["stop", "clear", "add #{file}", "play"])
+  end
+
+  def list_audio_tracks(socket) do
+    command(socket, "atrack")
+
+    socket
+    |> collect_list()
+    |> Enum.map(fn item ->
+      [id, label] = item |> String.trim() |> String.split(" - ", parts: 2)
+      id = String.to_integer(id)
+      selected = String.ends_with?(label, "*")
+      label = String.trim_trailing(label, " *")
+      %{id: id, selected: selected, label: label}
+    end)
+    |> Enum.sort_by(fn m -> m.id end)
+  end
+
+  defp collect_list(socket) do
+    "+----" <> _ = readline(socket)
+    items = collect_list_items(socket, [])
+    items |> IO.inspect(label: "items")
+  end
+
+  defp collect_list_items(socket, acc) do
+    case readline(socket) do
+      "+----" <> _ -> :lists.reverse(acc)
+      "| " <> item -> collect_list_items(socket, [item | acc])
+    end
   end
 end
