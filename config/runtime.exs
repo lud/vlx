@@ -24,7 +24,10 @@ config :vlx, :media,
   dir: System.fetch_env!("VLX_MEDIA_DIR"),
   refresh: String.to_integer(System.get_env("VLX_MEDIA_REFRESH", "5000"))
 
-config :vlx, :vlc, vlc_bin: System.get_env("VLX_VLC_BIN", "vlc")
+config :vlx, :vlc,
+  vlc_bin: System.get_env("VLX_VLC_BIN", "vlc"),
+  port: String.to_integer(System.get_env("VLX_VLC_PORT", "5555")),
+  password: System.get_env("VLX_VLC_PASSWORD", "dev")
 
 if config_env() == :prod do
   # The secret key base is used to sign/encrypt cookies and other secrets.

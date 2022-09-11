@@ -1,6 +1,7 @@
 defmodule Vlx.MediaServer do
   @moduledoc """
-  This module implements a gen server
+  This module implements a gen server that will monitor the list of media files
+  and publish this list.
   """
 
   use GenServer
