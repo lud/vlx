@@ -13,7 +13,7 @@ config :vlx, VlxWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "pVpw2PvSH139xkFF11Ee4qnJF18SUHYvxV0dtCErjFW0G78t6z26UhYklvreWb5s",
+  secret_key_base: "cIqcBXY1I0vs6hV7b4t8THCtqLHNca89wp3dKxZ4RvE9q6hY+tNvpoCUulVArFkt",
   watchers: [
     # Start the esbuild watcher by calling Esbuild.install_and_run(:default, args)
     esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]}

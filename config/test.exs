@@ -4,12 +4,8 @@ import Config
 # you can enable the server option below.
 config :vlx, VlxWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "rDu/AS1Uvlljv98Hqdxhm5bvUr4P9kGesozzUvtm/oHku/egjUhARqPQXHCzbt2o",
+  secret_key_base: "M6FjgdgUZyES5RVgQPDhVMRO4SfS6iI6L/rqWzbOYZCR/5pHFazSs+p0kIUvSN7c",
   server: false
-
-# In test we don't send emails.
-config :vlx, Vlx.Mailer,
-  adapter: Swoosh.Adapters.Test
 
 # Print only warnings and errors during test
 config :logger, level: :warn
