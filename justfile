@@ -1,5 +1,5 @@
 start-vlc:
-  vlc -I telnet --telnet-password dev --telnet-port 5555
+  vlc --extraintf telnet --telnet-password dev --telnet-port 5555
 
 run: (iex)
 iex:

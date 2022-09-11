@@ -10,7 +10,6 @@ defmodule VlxWeb.RCLive do
   def mount(_params, _, socket) do
     media =
       if connected?(socket) do
-        schedule_refresh()
         :ok = Vlx.MediaServer.subscribe()
         Vlx.MediaServer.fetch_media!()
       else
@@ -18,10 +17,6 @@ defmodule VlxWeb.RCLive do
       end
 
     {:ok, assign(socket, media: media, title: "Loading", subs_tracks: [], audio_tracks: [])}
-  end
-
-  defp schedule_refresh do
-    send(self(), :refresh_info)
   end
 
   def render(assigns) do
@@ -35,10 +30,6 @@ defmodule VlxWeb.RCLive do
 
   def handle_info({:media_list, media}, socket) do
     {:noreply, assign(socket, media: media)}
-  end
-
-  def handle_info(:refresh_info, socket) do
-    {:noreply, refresh(socket)}
   end
 
   defp refresh(socket) do
