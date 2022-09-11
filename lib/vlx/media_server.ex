@@ -13,20 +13,20 @@ defmodule Vlx.MediaServer do
   end
 
   defmodule S do
-    @enforce_keys [:config, :media]
+    @enforce_keys [:config, :media, :subscribers]
     defstruct @enforce_keys
   end
 
   @impl GenServer
-  def init(opts) do
+  def init(_opts) do
     config = fetch_config()
     start_schedule(config)
-    {:ok, %S{config: config, media: []}}
+    {:ok, %S{config: config, media: [], subscribers: []}}
   end
 
   defp fetch_config() do
     %{dir: dir, refresh: refresh} = Map.new(Application.fetch_env!(:vlx, :media))
-    %{dir: dir, refresh: refresh}
+    %{dir: Path.absname(dir), refresh: refresh}
   end
 
   defp start_schedule(%{refresh: int}) do
@@ -37,9 +37,10 @@ defmodule Vlx.MediaServer do
   @impl GenServer
   def handle_info(:refresh, state) do
     media = fetch_media(state)
+    dbg(media)
 
     if media != state.media do
-      TODO.publish_media()
+      publish_media(state.subscribers, media)
     end
 
     state = %S{state | media: media}
@@ -48,5 +49,9 @@ defmodule Vlx.MediaServer do
 
   defp fetch_media(%{config: %{dir: dir}}) do
     Vlx.MediaLib.read_dir_tree(dir)
+  end
+
+  defp publish_media(subscribers, media) do
+    Enum.each(subscribers, fn pid -> send(pid, {__MODULE__, :media, media}) end)
   end
 end
