@@ -2,6 +2,7 @@ defmodule VlxWeb.RCLive do
   use Phoenix.LiveView
   require Logger
 
+  alias VlxWeb.Components.Navbar
   alias VlxWeb.Components.MediaList
   alias VlxWeb.Components.PlayBackControl
   alias Vlx.VLCRemote
@@ -11,6 +12,7 @@ defmodule VlxWeb.RCLive do
     socket =
       assign(socket,
         media: [],
+        tab: :playback,
         title: "Loading",
         subs_tracks: [],
         audio_tracks: []
@@ -34,8 +36,13 @@ defmodule VlxWeb.RCLive do
   def render(assigns) do
     ~H"""
     <div>
-      <PlayBackControl.index title={@title} subs_tracks={@subs_tracks} audio_tracks={@audio_tracks} />
-      <MediaList.index media={@media} />
+      <Navbar.index current={@tab}/>
+      <div class="container p-4">
+        <%= case @tab do %>
+          <% :playback -> %> <PlayBackControl.index title={@title} subs_tracks={@subs_tracks} audio_tracks={@audio_tracks} />
+          <% :media -> %> <MediaList.index media={@media} />
+        <% end %>
+      </div>
     </div>
     """
   end
@@ -79,5 +86,15 @@ defmodule VlxWeb.RCLive do
   def handle_event("set_subs", %{"id" => id}, socket) do
     :ok = VLCRemote.set_subs(id)
     {:noreply, refresh(socket)}
+  end
+
+  def handle_event("set_tab", %{"tab" => tab}, socket) do
+    tab =
+      case tab do
+        "media" -> :media
+        "playback" -> :playback
+      end
+
+    {:noreply, assign(socket, :tab, tab)}
   end
 end

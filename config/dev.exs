@@ -49,7 +49,7 @@ config :vlx, VlxWeb.Endpoint,
     patterns: [
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"priv/gettext/.*(po)$",
-      ~r"lib/vlx_web/(live|views)/.*(ex)$",
+      ~r"lib/vlx_web/(live|views|components)/.*(ex)$",
       ~r"lib/vlx_web/templates/.*(eex)$"
     ]
   ]
