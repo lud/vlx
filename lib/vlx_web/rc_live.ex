@@ -5,18 +5,30 @@ defmodule VlxWeb.RCLive do
   alias VlxWeb.Components.MediaList
   alias VlxWeb.Components.PlayBackControl
   alias Vlx.VLCRemote
-  alias Vlx.VLCCom
+  alias Vlx.Sidekick
 
   def mount(_params, _, socket) do
-    media =
-      if connected?(socket) do
-        :ok = Vlx.MediaServer.subscribe()
-        Vlx.MediaServer.fetch_media!()
-      else
-        []
-      end
+    socket =
+      assign(socket,
+        media: [],
+        title: "Loading",
+        subs_tracks: [],
+        audio_tracks: []
+      )
 
-    {:ok, assign(socket, media: media, title: "Loading", subs_tracks: [], audio_tracks: [])}
+    if connected?(socket) do
+      :ok = Vlx.MediaServer.subscribe()
+      this = self()
+
+      Sidekick.spawn_task(fn ->
+        media = Vlx.MediaServer.fetch_media!()
+        send(this, {:media_list, media})
+      end)
+
+      send(self(), :refresh)
+    end
+
+    {:ok, socket}
   end
 
   def render(assigns) do
@@ -32,9 +44,25 @@ defmodule VlxWeb.RCLive do
     {:noreply, assign(socket, media: media)}
   end
 
+  def handle_info(:refresh, socket) do
+    {:noreply, refresh(socket)}
+  end
+
+  def handle_info({:refreshed, info}, socket) do
+    %{audio_tracks: audio, subs_tracks: subs, title: title} = info
+    socket = assign(socket, audio_tracks: audio, subs_tracks: subs, title: title)
+    {:noreply, socket}
+  end
+
   defp refresh(socket) do
-    data = VLCRemote.fetch_payback_info()
-    assign(socket, data)
+    this = self()
+
+    Sidekick.spawn_task(fn ->
+      info = VLCRemote.fetch_payback_info()
+      send(this, {:refreshed, info})
+    end)
+
+    socket
   end
 
   def handle_event("play", %{"path" => path}, socket) do

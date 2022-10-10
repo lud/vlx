@@ -8,6 +8,7 @@ defmodule Vlx.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      Vlx.Sidekick,
       {Phoenix.PubSub, name: Vlx.PubSub},
       Vlx.MediaServer,
       Vlx.VLCRemote,
