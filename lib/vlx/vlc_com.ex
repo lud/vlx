@@ -3,6 +3,8 @@ defmodule Vlx.VLCCom do
   This module controls VLC with a TCP connexion.
   """
 
+  require Logger
+
   alias :gen_tcp, as: TCP
 
   def connect(%{port: port, password: pass}, timeout \\ 5000) do
@@ -26,13 +28,20 @@ defmodule Vlx.VLCCom do
     <<255, 252, 1, 13, 10>> = readline(socket)
     "Welcome, Master" <> _ = readline(socket)
 
+    Logger.info("vlc handshake complete")
+
     {:ok, socket}
   end
 
   defp command(socket, com) when is_binary(com) do
     Process.sleep(500)
     :ok = consume_prompt(socket)
+    Logger.debug("[tcp send] #{inspect(com)}")
     :ok = TCP.send(socket, com <> "\n")
+  end
+
+  defp command(socket, commands) when is_list(commands) do
+    Enum.each(commands, fn c -> command(socket, c) end)
   end
 
   defp consume_prompt(socket) do
@@ -41,23 +50,30 @@ defmodule Vlx.VLCCom do
     :inet.setopts(socket, packet: :line)
   end
 
-  defp command(socket, commands) when is_list(commands) do
-    Enum.each(commands, fn c -> command(socket, c) end)
-  end
-
   defp readline(socket) do
-    {:ok, line} = TCP.recv(socket, 0, 50000)
-    IO.inspect(line, label: "tcp")
+    {:ok, line} = TCP.recv(socket, 0, 5000)
+    Logger.debug("[tcp line] #{inspect(line)}")
     line
   end
 
   defp read(socket, len) do
-    {:ok, raw} = TCP.recv(socket, len, 50000)
-    IO.inspect(raw, label: "tcp")
+    {:ok, raw} = TCP.recv(socket, len, 5000)
+    Logger.debug("[tcp raw] #{inspect(raw)}")
     raw
   end
 
+  @platform (case(:os.type()) do
+               {:win32, _} -> :win
+               _ -> :other
+             end)
+
   def play(socket, file) do
+    file =
+      case @platform do
+        :win -> String.replace(file, "/", "\\")
+        _ -> file
+      end
+
     command(socket, ["stop", "clear", "add #{file}", "play"])
     await_playback(socket)
   end

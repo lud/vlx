@@ -1,4 +1,7 @@
 import Config
+import Dotenvy
+
+Dotenvy.source([".env"])
 
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
@@ -21,13 +24,13 @@ if System.get_env("PHX_SERVER") do
 end
 
 config :vlx, :media,
-  dir: System.fetch_env!("VLX_MEDIA_DIR"),
+  dir: env!("VLX_MEDIA_DIR", :string!),
   refresh: String.to_integer(System.get_env("VLX_MEDIA_REFRESH", "5000"))
 
 config :vlx, :vlc,
-  vlc_bin: System.get_env("VLX_VLC_BIN", "vlc"),
-  port: String.to_integer(System.get_env("VLX_VLC_PORT", "5555")),
-  password: System.get_env("VLX_VLC_PASSWORD", "dev")
+  vlc_bin: env!("VLX_VLC_BIN", :string!, "vlc"),
+  port: env!("VLX_VLC_PORT", :integer!, "5555"),
+  password: env!("VLX_VLC_PASSWORD", :string!, "dev")
 
 if config_env() == :prod do
   # The secret key base is used to sign/encrypt cookies and other secrets.

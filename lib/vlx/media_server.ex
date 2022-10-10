@@ -5,6 +5,7 @@ defmodule Vlx.MediaServer do
   """
 
   use GenServer
+  require Logger
 
   @pubsub_topic "media_list"
   @pubsub Vlx.PubSub
@@ -39,7 +40,10 @@ defmodule Vlx.MediaServer do
 
   @impl GenServer
   def handle_info(:refresh, state) do
+    Logger.info("refreshing media list")
     media = fetch_media(state)
+    len = length(media)
+    Logger.info("#{len} media found")
 
     if media != state.media do
       publish_media(media)

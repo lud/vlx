@@ -38,7 +38,7 @@ defmodule VlxWeb.RCLive do
   end
 
   def handle_event("play", %{"path" => path}, socket) do
-    Logger.info("now playing #{path}")
+    Logger.info("start playing #{path}")
     :ok = VLCRemote.play(path)
     {:noreply, refresh(socket)}
   end
