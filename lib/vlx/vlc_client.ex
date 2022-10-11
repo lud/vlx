@@ -60,37 +60,8 @@ defmodule Vlx.VlcClient do
   end
 
   def get_streams(%C{} = client, type \\ :all) do
-    with {:ok, status} <- get_status(client),
-         {:ok, info} <- Map.fetch(status, "information"),
-         {:ok, streams} <- Map.fetch(info, "category") do
-      {:ok, refine_streams(streams, type)}
-    else
-      :error -> {:error, "could not obtain streams"}
-      {:error, _} = err -> err
-    end
-  end
-
-  defp refine_streams(streams, type) do
-    streams
-    |> Enum.flat_map(fn
-      {"Flux " <> id, %{"Type_" => "Audio"} = stream}
-      when type in [:all, :audio] ->
-        collect_stream(id, stream)
-
-      {"Flux " <> id, %{"Type_" => "Sous-titres" <> _} = stream}
-      when type in [:all, :subtitles] ->
-        collect_stream(id, stream)
-
-      _ ->
-        []
-    end)
-    |> Map.new()
-  end
-
-  defp collect_stream(id, stream) do
-    case Integer.parse(id) do
-      {id, ""} -> [{id, stream}]
-      _ -> []
+    with {:ok, status} <- get_status(client) do
+      Vlx.VlcStatus.get_streams(status, type)
     end
   end
 

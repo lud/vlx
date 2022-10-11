@@ -15,77 +15,39 @@ defmodule Vlx.MediaServer do
     GenServer.start_link(__MODULE__, opts, gen_opts)
   end
 
-  def subscribe do
-    GenServer.call(__MODULE__, {:subscribe, self()})
-  end
-
-  def fetch_media! do
-    GenServer.call(__MODULE__, :fetch)
+  def publish_media(force?) do
+    GenServer.call(__MODULE__, {:publish_media, force?})
   end
 
   defmodule S do
-    @enforce_keys [:config, :media, :clients]
+    @enforce_keys [:config, :media]
     defstruct @enforce_keys
   end
 
   @impl GenServer
   def init(_opts) do
     config = fetch_config()
-    start_schedule(config)
-    {:ok, %S{config: config, media: [], clients: %{}}}
+    {:ok, %S{config: config, media: []}}
   end
 
   @impl GenServer
-
-  def handle_info(:refresh, state) when map_size(state.clients) == 0 do
-    state.clients |> IO.inspect(label: "state.clients norefresh")
-    {:noreply, state}
-  end
-
-  def handle_info(:refresh, state) do
+  def handle_call({:publish_media, force?}, _, state) do
     Logger.info("refreshing media list")
     media = fetch_media(state)
-    len = length(media)
+    len = count_files(media, 0)
     Logger.info("#{len} media found")
 
-    changed? = media != state.media
+    if force? or media != state.media do
+      do_publish_media(media)
+    end
 
     state = %S{state | media: media}
-
-    if changed?, do: publish_media(state)
-
-    {:noreply, state}
-  end
-
-  def handle_info({:DOWN, ref, :process, _, _}, state) when is_map_key(state.clients, ref) do
-    {_, state} = pop_in(state.clients[ref])
-    state.clients |> IO.inspect(label: "clients")
-    {:noreply, state}
-  end
-
-  @impl GenServer
-
-  def handle_call(:fetch, _, state) do
-    {:reply, state.media, state}
-  end
-
-  def handle_call({:subscribe, pid}, _, state) do
-    ref = Process.monitor(pid)
-    state = put_in(state.clients[ref], pid)
-    state |> IO.inspect(label: "state")
-    send(self(), :refresh)
-    state.clients |> IO.inspect(label: "clients")
     {:reply, :ok, state}
   end
 
   defp fetch_config() do
-    %{dir: dir, refresh: refresh} = Map.new(Application.fetch_env!(:vlx, :media))
-    %{dir: Path.absname(dir), refresh: refresh}
-  end
-
-  defp start_schedule(%{refresh: int}) do
-    send(self(), :refresh)
-    :timer.send_interval(int, :refresh)
+    %{dir: dir} = Map.new(Application.fetch_env!(:vlx, :media))
+    %{dir: Path.absname(dir)}
   end
 
   defp fetch_media(%{config: %{dir: dir}}) do
@@ -95,8 +57,16 @@ defmodule Vlx.MediaServer do
     |> Vlx.MediaLib.sort_by_name()
   end
 
-  defp publish_media(state) do
-    media = state.media
-    Enum.each(state.clients, fn {_ref, pid} -> send(pid, {:media_list, media}) end)
+  defp count_files(files, acc) do
+    alias Vlx.MediaLib.{MFile, MDir}
+
+    Enum.reduce(files, acc, fn
+      %MFile{}, acc -> acc + 1
+      %MDir{children: children}, acc -> count_files(children, acc)
+    end)
+  end
+
+  defp do_publish_media(media) do
+    Vlx.PubSub.publish_media(media)
   end
 end

@@ -30,6 +30,7 @@ defmodule Vlx.VlcRemote do
   A process to control VLC with TCP.
   """
   alias Vlx.VlcClient
+  alias Vlx.VlcStatus
   use GenServer
   require Logger
   import Vlx.VlcRemote.CompileTime
@@ -42,18 +43,19 @@ defmodule Vlx.VlcRemote do
     GenServer.start_link(__MODULE__, opts, gen_opts)
   end
 
+  @doc false
   def with_client(f) do
-    GenServer.call(__MODULE__, {:exec, f}, 20_000)
+    GenServer.call(__MODULE__, {:exec, f})
   end
 
-  defcommand fetch_playback_info(client) do
-    raise "todo"
+  def publish_status(force?) do
+    GenServer.call(__MODULE__, {:republish, force?})
   end
 
   @impl true
   def init([]) do
     send(self(), :reconnect)
-    {:ok, %{status: :disconnected, client: nil}}
+    {:ok, %{connstatus: :disconnected, client: nil, vlc_status: %{}}}
   end
 
   @impl true
@@ -67,23 +69,78 @@ defmodule Vlx.VlcRemote do
     case VlcClient.connected?(client) do
       true ->
         Logger.info("successfully connected to VLC")
-        {:noreply, %{state | status: :connected, client: client}}
+        {:noreply, %{state | connstatus: :connected, client: client}}
 
       false ->
         Logger.error("could not connect to VLC")
         Process.send_after(self(), :reconnect, 1000)
-        {:noreply, %{state | status: :connected}}
+        {:noreply, %{state | connstatus: :connected}}
     end
   end
 
   @impl true
 
-  def handle_call({:exec, f}, _, %{status: :disconnected} = state) do
+  def handle_call(_, _, %{connstatus: :disconnected} = state) do
     {:reply, {:error, :disconnected}, state}
   end
 
-  def handle_call({:exec, f}, _, %{status: :connected} = state) do
-    reply = f.(state.client)
-    {:reply, reply, state}
+  def handle_call({:exec, f}, from, state) do
+    state =
+      case f.(state.client) do
+        {:ok, %{"apiversion" => 3} = raw_status} = reply ->
+          GenServer.reply(from, reply)
+
+          handle_new_status(raw_status, state)
+
+        other ->
+          GenServer.reply(from, other)
+          state
+      end
+
+    {:noreply, state}
   end
+
+  def handle_call({:republish, force?}, from, state) do
+    case Vlx.VlcClient.get_status(state.client) do
+      {:ok, raw_status} ->
+        state = handle_new_status(raw_status, state, force?)
+        {:reply, :ok, state}
+
+      {:error, reason} when force? ->
+        {:reply, {:error, reason}, state}
+
+      # in that case we ignore the error
+      _other ->
+        {:reply, :ok, state}
+    end
+  end
+
+  defp handle_new_status(raw_status, state, force? \\ false) do
+    vlc_status = compute_status(raw_status)
+
+    if force? or vlc_status != state.vlc_status do
+      Vlx.PubSub.publish_vlc_status(vlc_status)
+      put_in(state.vlc_status, vlc_status)
+    else
+      state
+    end
+  end
+
+  defp compute_status(raw_status) do
+    %{
+      audio_tracks: or_empty(VlcStatus.get_streams(raw_status, :audio)),
+      subs_tracks: or_empty(VlcStatus.get_streams(raw_status, :subtitles)),
+      title: or_default(VlcStatus.get_filename(raw_status), "No File"),
+      state:
+        case raw_status do
+          %{"state" => state} -> state
+          _ -> "unknown"
+        end
+    }
+  end
+
+  defp or_empty({:ok, list}), do: list
+  defp or_empty({:error, _}), do: []
+  defp or_default({:ok, v}, _), do: v
+  defp or_default({:error, _}, default), do: default
 end

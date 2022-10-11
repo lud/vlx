@@ -6,13 +6,13 @@ defmodule VlxWeb.Components.PlayBackControl do
     ~H"""
     <div>
       <Text.page_header title={@title} smalltop={if(@title != "Loading", do: "Now Playing")} break={true} />
-    
+
       <Text.section_header title="Audio" />
       <%= render_audio_tracks(%{tracks: @audio_tracks}) %>
-    
+
       <Text.section_header title="Subtitles" />
       <%= render_subs_tracks(%{tracks: @subs_tracks}) %>
-    
+
     </div>
     """
   end

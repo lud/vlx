@@ -1,6 +1,8 @@
 defmodule Vlx.Sidekick do
   require Logger
 
+  @todo "remove this module"
+
   @doc false
   def child_spec([]) do
     Task.Supervisor.child_spec(name: __MODULE__)

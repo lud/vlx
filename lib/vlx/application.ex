@@ -12,6 +12,7 @@ defmodule Vlx.Application do
       {Phoenix.PubSub, name: Vlx.PubSub},
       Vlx.MediaServer,
       Vlx.VlcRemote,
+      Vlx.RCMonitor,
       VlxWeb.Telemetry,
       VlxWeb.Endpoint
     ]

@@ -14,7 +14,7 @@ Dotenvy.source([".env"])
 
 config :vlx, :media,
   dir: env!("VLX_MEDIA_DIR", :string!),
-  refresh: max(env!("VLX_MEDIA_REFRESH", :integer!, 5), 1) * 1000
+  refresh_interval: max(env!("VLX_MEDIA_REFRESH", :integer!, 5), 1) * 1000
 
 config :vlx, :vlc,
   port: env!("VLX_VLC_PORT", :integer!, 8080),

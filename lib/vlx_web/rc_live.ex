@@ -11,16 +11,16 @@ defmodule VlxWeb.RCLive do
     socket =
       assign(socket,
         media: [],
-        tab: :media,
+        tab: :playback,
         page_title: "Loading",
         subs_tracks: [],
         audio_tracks: []
       )
 
     if connected?(socket) do
-      :ok = Vlx.MediaServer.subscribe()
-
-      send(self(), :refresh)
+      :ok = Vlx.PubSub.listen_media()
+      :ok = Vlx.PubSub.listen_vlc_status()
+      :ok = Vlx.RCMonitor.register()
     end
 
     {:ok, socket}
@@ -45,41 +45,38 @@ defmodule VlxWeb.RCLive do
     {:noreply, assign(socket, media: media)}
   end
 
-  def handle_info(:refresh, socket) do
-    {:noreply, refresh(socket)}
-  end
-
-  def handle_info({:refreshed, info}, socket) do
+  def handle_info({:vlc_status, info}, socket) do
     %{audio_tracks: audio, subs_tracks: subs, title: title} = info
-    socket = assign(socket, page_title: title, audio_tracks: audio, subs_tracks: subs)
+
+    socket =
+      assign(socket,
+        page_title: title,
+        audio_tracks: normalize_audio_tracks(audio),
+        subs_tracks: normalize_sub_tracks(subs)
+      )
+
     {:noreply, socket}
   end
 
-  defp refresh(socket, assigns \\ []) do
-    this = self()
-
-    Sidekick.spawn_task(fn ->
-      info = VlcRemote.fetch_playback_info()
-      send(this, {:refreshed, info})
-    end)
-
-    assign(socket, assigns)
+  def handle_info(other, socket) do
+    Logger.error("unexepected info: #{inspect(other)}")
+    {:noreply, socket}
   end
 
   def handle_event("play", %{"path" => path}, socket) do
     Logger.info("start playing #{path}")
     :ok = VlcRemote.play(path)
-    {:noreply, refresh(socket, tab: :playback)}
+    {:noreply, assign(socket, tab: :playback)}
   end
 
   def handle_event("set_audio", %{"id" => id}, socket) do
     :ok = VlcRemote.set_audio(id)
-    {:noreply, refresh(socket)}
+    {:noreply, socket}
   end
 
   def handle_event("set_subs", %{"id" => id}, socket) do
     :ok = VlcRemote.set_subs(id)
-    {:noreply, refresh(socket)}
+    {:noreply, socket}
   end
 
   def handle_event("set_tab", %{"tab" => tab}, socket) do
@@ -90,5 +87,39 @@ defmodule VlxWeb.RCLive do
       end
 
     {:noreply, assign(socket, :tab, tab)}
+  end
+
+  defp normalize_audio_tracks(audio) do
+    audio
+    |> Enum.map(fn {id, info} ->
+      label = [
+        case info do
+          %{"Langue_" => lang} -> lang
+          _ -> "Unknown"
+        end
+      ]
+
+      %{selected: false, id: id, label: label}
+    end)
+    |> IO.inspect(label: "audio")
+  end
+
+  defp normalize_sub_tracks(subs) do
+    subs
+    |> Enum.map(fn {id, info} ->
+      label = [
+        case info do
+          %{"Langue_" => lang} -> lang
+          _ -> "Unknown"
+        end,
+        case info do
+          %{"Description" => desc} -> [" – ", desc]
+          _ -> []
+        end
+      ]
+
+      %{selected: false, id: id, label: label}
+    end)
+    |> IO.inspect(label: "subs")
   end
 end
