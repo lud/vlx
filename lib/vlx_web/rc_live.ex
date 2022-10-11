@@ -65,17 +65,19 @@ defmodule VlxWeb.RCLive do
 
   def handle_event("play", %{"path" => path}, socket) do
     Logger.info("start playing #{path}")
-    :ok = VlcRemote.play(path)
+    # it's bad that we get the status directly since we will receive it through
+    # pubsub. We might as well use it from here.
+    {:ok, _} = VlcRemote.play_file(path)
     {:noreply, assign(socket, tab: :playback)}
   end
 
   def handle_event("set_audio", %{"id" => id}, socket) do
-    :ok = VlcRemote.set_audio(id)
+    {:ok, _} = VlcRemote.set_audio_track(String.to_integer(id))
     {:noreply, socket}
   end
 
   def handle_event("set_subs", %{"id" => id}, socket) do
-    :ok = VlcRemote.set_subs(id)
+    {:ok, _} = VlcRemote.set_subtitle_track(String.to_integer(id))
     {:noreply, socket}
   end
 

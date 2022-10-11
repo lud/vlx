@@ -23,6 +23,22 @@ defmodule Vlx.VlcRemote.CompileTime do
     binding |> IO.inspect(label: "binding")
     raise "invalid macro call"
   end
+
+  @doc """
+  Takes a list of exported function from Vlx.VlcClient and creates a function
+  with arity minus one, forwarding the call to Vlx.VlcRemote.
+  """
+  defmacro forward_calls(exports) when is_list(exports) do
+    quote bind_quoted: [exports: exports] do
+      Enum.each(exports, fn {fun, arity} ->
+        args = Macro.generate_arguments(arity - 1, Vlx.VlcRemote)
+
+        def unquote(fun)(unquote_splicing(args)) do
+          with_client(fn client -> Vlx.VlcClient.unquote(fun)(client, unquote_splicing(args)) end)
+        end
+      end)
+    end
+  end
 end
 
 defmodule Vlx.VlcRemote do
@@ -51,6 +67,20 @@ defmodule Vlx.VlcRemote do
   def publish_status(force?) do
     GenServer.call(__MODULE__, {:republish, force?})
   end
+
+  forward_calls(
+    connected?: 1,
+    empty_playlist: 1,
+    get_status: 1,
+    get_streams: 1,
+    get_streams: 2,
+    pause_playback: 1,
+    play_file: 2,
+    relative_seek: 2,
+    resume_playback: 1,
+    set_audio_track: 2,
+    set_subtitle_track: 2
+  )
 
   @impl true
   def init([]) do
@@ -89,7 +119,6 @@ defmodule Vlx.VlcRemote do
       case f.(state.client) do
         {:ok, %{"apiversion" => 3} = raw_status} = reply ->
           GenServer.reply(from, reply)
-
           handle_new_status(raw_status, state)
 
         other ->
