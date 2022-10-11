@@ -98,8 +98,17 @@ defmodule Vlx.VlcClient do
     get_json(client, "/requests/status.json")
   end
 
-  def play_file(client, movie) do
-    get_json(client, "/requests/status.json", command: :in_play, input: movie)
+  def play_file(client, path) do
+    path = convert_path(path)
+
+    get_json(client, "/requests/status.json", command: :in_play, input: path)
+  end
+
+  defp convert_path(path) do
+    case :os.type() do
+      {:win32, _} -> String.replace(path, "/", "\\")
+      _ -> path
+    end
   end
 
   def set_subtitle_track(client, :disable) do

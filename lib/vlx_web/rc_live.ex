@@ -1,12 +1,11 @@
 defmodule VlxWeb.RCLive do
-  use Phoenix.LiveView
-  require Logger
-
-  alias VlxWeb.Components.Navbar
-  alias VlxWeb.Components.MediaList
-  alias VlxWeb.Components.PlayBackControl
-  alias Vlx.VLCRemote
   alias Vlx.Sidekick
+  alias Vlx.VlcRemote
+  alias VlxWeb.Components.MediaList
+  alias VlxWeb.Components.Navbar
+  alias VlxWeb.Components.PlayBackControl
+  require Logger
+  use Phoenix.LiveView
 
   def mount(_params, _, socket) do
     socket =
@@ -20,12 +19,6 @@ defmodule VlxWeb.RCLive do
 
     if connected?(socket) do
       :ok = Vlx.MediaServer.subscribe()
-      this = self()
-
-      Sidekick.spawn_task(fn ->
-        media = Vlx.MediaServer.fetch_media!()
-        send(this, {:media_list, media})
-      end)
 
       send(self(), :refresh)
     end
@@ -66,7 +59,7 @@ defmodule VlxWeb.RCLive do
     this = self()
 
     Sidekick.spawn_task(fn ->
-      info = VLCRemote.fetch_payback_info()
+      info = VlcRemote.fetch_playback_info()
       send(this, {:refreshed, info})
     end)
 
@@ -75,17 +68,17 @@ defmodule VlxWeb.RCLive do
 
   def handle_event("play", %{"path" => path}, socket) do
     Logger.info("start playing #{path}")
-    :ok = VLCRemote.play(path)
+    :ok = VlcRemote.play(path)
     {:noreply, refresh(socket, tab: :playback)}
   end
 
   def handle_event("set_audio", %{"id" => id}, socket) do
-    :ok = VLCRemote.set_audio(id)
+    :ok = VlcRemote.set_audio(id)
     {:noreply, refresh(socket)}
   end
 
   def handle_event("set_subs", %{"id" => id}, socket) do
-    :ok = VLCRemote.set_subs(id)
+    :ok = VlcRemote.set_subs(id)
     {:noreply, refresh(socket)}
   end
 

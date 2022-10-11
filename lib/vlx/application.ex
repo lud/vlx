@@ -16,8 +16,6 @@ defmodule Vlx.Application do
       VlxWeb.Endpoint
     ]
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Vlx.Supervisor]
     Supervisor.start_link(children, opts)
   end

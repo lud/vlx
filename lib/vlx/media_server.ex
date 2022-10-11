@@ -7,9 +7,6 @@ defmodule Vlx.MediaServer do
   use GenServer
   require Logger
 
-  @pubsub_topic "media_list"
-  @pubsub Vlx.PubSub
-
   @gen_opts ~w(name timeout debug spawn_opt hibernate_after)a
 
   def start_link(opts) do
@@ -19,7 +16,7 @@ defmodule Vlx.MediaServer do
   end
 
   def subscribe do
-    Phoenix.PubSub.subscribe(@pubsub, @pubsub_topic)
+    GenServer.call(__MODULE__, {:subscribe, self()})
   end
 
   def fetch_media! do
@@ -27,7 +24,7 @@ defmodule Vlx.MediaServer do
   end
 
   defmodule S do
-    @enforce_keys [:config, :media]
+    @enforce_keys [:config, :media, :clients]
     defstruct @enforce_keys
   end
 
@@ -35,27 +32,50 @@ defmodule Vlx.MediaServer do
   def init(_opts) do
     config = fetch_config()
     start_schedule(config)
-    {:ok, %S{config: config, media: []}}
+    {:ok, %S{config: config, media: [], clients: %{}}}
   end
 
   @impl GenServer
+
+  def handle_info(:refresh, state) when map_size(state.clients) == 0 do
+    state.clients |> IO.inspect(label: "state.clients norefresh")
+    {:noreply, state}
+  end
+
   def handle_info(:refresh, state) do
     Logger.info("refreshing media list")
     media = fetch_media(state)
     len = length(media)
     Logger.info("#{len} media found")
 
-    if media != state.media do
-      publish_media(media)
-    end
+    changed? = media != state.media
 
     state = %S{state | media: media}
+
+    if changed?, do: publish_media(state)
+
+    {:noreply, state}
+  end
+
+  def handle_info({:DOWN, ref, :process, _, _}, state) when is_map_key(state.clients, ref) do
+    {_, state} = pop_in(state.clients[ref])
+    state.clients |> IO.inspect(label: "clients")
     {:noreply, state}
   end
 
   @impl GenServer
+
   def handle_call(:fetch, _, state) do
     {:reply, state.media, state}
+  end
+
+  def handle_call({:subscribe, pid}, _, state) do
+    ref = Process.monitor(pid)
+    state = put_in(state.clients[ref], pid)
+    state |> IO.inspect(label: "state")
+    send(self(), :refresh)
+    state.clients |> IO.inspect(label: "clients")
+    {:reply, :ok, state}
   end
 
   defp fetch_config() do
@@ -65,7 +85,6 @@ defmodule Vlx.MediaServer do
 
   defp start_schedule(%{refresh: int}) do
     send(self(), :refresh)
-    IO.inspect(int, label: "refresh")
     :timer.send_interval(int, :refresh)
   end
 
@@ -76,7 +95,8 @@ defmodule Vlx.MediaServer do
     |> Vlx.MediaLib.sort_by_name()
   end
 
-  defp publish_media(media) do
-    Phoenix.PubSub.broadcast!(@pubsub, @pubsub_topic, {:media_list, media})
+  defp publish_media(state) do
+    media = state.media
+    Enum.each(state.clients, fn {_ref, pid} -> send(pid, {:media_list, media}) end)
   end
 end

@@ -75,4 +75,15 @@ defmodule Vlx.VlcRemote do
         {:noreply, %{state | status: :connected}}
     end
   end
+
+  @impl true
+
+  def handle_call({:exec, f}, _, %{status: :disconnected} = state) do
+    {:reply, {:error, :disconnected}, state}
+  end
+
+  def handle_call({:exec, f}, _, %{status: :connected} = state) do
+    reply = f.(state.client)
+    {:reply, reply, state}
+  end
 end
