@@ -5,14 +5,14 @@ defmodule VlxWeb.Components.PlayBackControl do
   def index(assigns) do
     ~H"""
     <div>
-      <Text.section_header title={@title} />
-
-      <Text.sub_header title="Audio" />
+      <Text.page_header title={@title} smalltop={if(@title != "Loading", do: "Now Playing")} break={true} />
+    
+      <Text.section_header title="Audio" />
       <%= render_audio_tracks(%{tracks: @audio_tracks}) %>
-
-      <Text.sub_header title="Subtitles" />
+    
+      <Text.section_header title="Subtitles" />
       <%= render_subs_tracks(%{tracks: @subs_tracks}) %>
-
+    
     </div>
     """
   end
@@ -22,7 +22,7 @@ defmodule VlxWeb.Components.PlayBackControl do
     <ul>
       <%= for %{id: id, label: label, selected: sel} <- @tracks do %>
         <li
-          class={if(sel, do: "text-blue-600", else: "")}
+          class={"cursor-pointer pl-2 #{if(sel, do: "text-orange-500", else: "")}"}
           phx-click="set_audio" phx-value-id={id}
           ><%= label %></li>
       <% end %>
@@ -35,7 +35,7 @@ defmodule VlxWeb.Components.PlayBackControl do
     <ul>
       <%= for %{id: id, label: label, selected: sel} <- @tracks do %>
         <li
-          class={if(sel, do: "text-blue-600", else: "")}
+          class={"cursor-pointer pl-2 #{if(sel, do: "text-orange-500", else: "")}"}
           phx-click="set_subs" phx-value-id={id}
           ><%= label %></li>
       <% end %>

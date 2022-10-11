@@ -1,16 +1,26 @@
 defmodule VlxWeb.Components.Text do
   use Phoenix.Component
-  alias Phoenix.LiveView.JS
 
-  def section_header(assigns) do
+  def page_header(assigns) do
+    assigns =
+      assigns
+      |> Map.put_new(:smalltop, nil)
+      |> Map.put_new(:break, false)
+
     ~H"""
-    <h2 class="text-xl"><%= @title %></h2>
+    <h2 class={"text-xl mb-4 #{if(@break, do: "break-all")}"}>
+      <%= if @smalltop do %>
+         <span class="text-sm"><%=@smalltop%></span>
+         <br/>
+      <% end %>
+      <%= @title %>
+    </h2>
     """
   end
 
-  def sub_header(assigns) do
+  def section_header(assigns) do
     ~H"""
-    <h3 class="text-lg"><%= @title %></h3>
+    <h3 class="text-lg mb-2 mt-4"><%= @title %></h3>
     """
   end
 end

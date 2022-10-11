@@ -6,11 +6,23 @@ defmodule Vlx.MediaLib do
   defmodule MFile do
     @enforce_keys [:path, :name, :ext]
     defstruct @enforce_keys
+
+    defimpl Inspect do
+      def inspect(%{name: name}, _) do
+        "#MFile<#{name}>"
+      end
+    end
   end
 
   defmodule MDir do
     @enforce_keys [:path, :name, :children]
     defstruct @enforce_keys
+
+    defimpl Inspect do
+      def inspect(%{name: name}, _) do
+        "#MDir<#{name}>"
+      end
+    end
   end
 
   def read_dir_tree(dir) do

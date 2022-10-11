@@ -1,16 +1,12 @@
 defmodule VlxWeb.Components.Navbar do
   use Phoenix.Component
 
-  alias Phoenix.LiveView.JS
-  alias Vlx.MediaLib.{MFile, MDir}
-  alias VlxWeb.Components.Text
-
   def index(assigns) do
     ~H"""
     <nav class="bg-white shadow dark:bg-gray-800">
-      <div class="container flex items-center justify-between p-6 mx-auto text-gray-600 dark:text-gray-300">
+      <div class="container flex items-center justify-between p-6 mx-auto text-gray-800 dark:text-gray-300">
         <div>
-          <a class="text-2xl font-mono font-bold text-gray-800 transition-colors duration-300 transform dark:text-white lg:text-3xl hover:text-gray-700 dark:hover:text-gray-300" href="#">vlx</a>
+          <span class="text-2xl font-mono font-bold transition-colors duration-300 transform lg:text-3xl hover:text-gray-700">vlx</span>
         </div>
         <div>
           <.navlink text="Playback" tab="playback" active={@current == :playback}/>
@@ -29,13 +25,13 @@ defmodule VlxWeb.Components.Navbar do
       phx-click="set_tab" phx-value-tab={@tab}
       class={"
         border-b-2
-        #{if @active, do: "border-blue-500", else: "border-transparent"}
+        #{if @active, do: "border-orange-500", else: "border-transparent"}
         hover:text-gray-800
         transition-colors
         duration-300
         transform
         dark:hover:text-gray-200
-        hover:border-blue-500
+        hover:border-orange-500
         mx-1.5 sm:mx-6
       "}
       ><%= @text %></a>

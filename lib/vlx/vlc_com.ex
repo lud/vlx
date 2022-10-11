@@ -51,13 +51,13 @@ defmodule Vlx.VLCCom do
   end
 
   defp readline(socket) do
-    {:ok, line} = TCP.recv(socket, 0, 5000)
+    {:ok, line} = TCP.recv(socket, 0, 20_000)
     Logger.debug("[tcp line] #{inspect(line)}")
     line
   end
 
   defp read(socket, len) do
-    {:ok, raw} = TCP.recv(socket, len, 5000)
+    {:ok, raw} = TCP.recv(socket, len, 20_000)
     Logger.debug("[tcp raw] #{inspect(raw)}")
     raw
   end

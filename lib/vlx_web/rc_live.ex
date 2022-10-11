@@ -12,8 +12,8 @@ defmodule VlxWeb.RCLive do
     socket =
       assign(socket,
         media: [],
-        tab: :playback,
-        title: "Loading",
+        tab: :media,
+        page_title: "Loading",
         subs_tracks: [],
         audio_tracks: []
       )
@@ -33,13 +33,14 @@ defmodule VlxWeb.RCLive do
     {:ok, socket}
   end
 
+  @spec render(any) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
     <div>
       <Navbar.index current={@tab}/>
       <div class="container p-4">
         <%= case @tab do %>
-          <% :playback -> %> <PlayBackControl.index title={@title} subs_tracks={@subs_tracks} audio_tracks={@audio_tracks} />
+          <% :playback -> %> <PlayBackControl.index title={@page_title} subs_tracks={@subs_tracks} audio_tracks={@audio_tracks} />
           <% :media -> %> <MediaList.index media={@media} />
         <% end %>
       </div>
@@ -57,11 +58,11 @@ defmodule VlxWeb.RCLive do
 
   def handle_info({:refreshed, info}, socket) do
     %{audio_tracks: audio, subs_tracks: subs, title: title} = info
-    socket = assign(socket, audio_tracks: audio, subs_tracks: subs, title: title)
+    socket = assign(socket, page_title: title, audio_tracks: audio, subs_tracks: subs)
     {:noreply, socket}
   end
 
-  defp refresh(socket) do
+  defp refresh(socket, assigns \\ []) do
     this = self()
 
     Sidekick.spawn_task(fn ->
@@ -69,13 +70,13 @@ defmodule VlxWeb.RCLive do
       send(this, {:refreshed, info})
     end)
 
-    socket
+    assign(socket, assigns)
   end
 
   def handle_event("play", %{"path" => path}, socket) do
     Logger.info("start playing #{path}")
     :ok = VLCRemote.play(path)
-    {:noreply, refresh(socket)}
+    {:noreply, refresh(socket, tab: :playback)}
   end
 
   def handle_event("set_audio", %{"id" => id}, socket) do

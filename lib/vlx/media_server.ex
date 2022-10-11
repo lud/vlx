@@ -65,6 +65,7 @@ defmodule Vlx.MediaServer do
 
   defp start_schedule(%{refresh: int}) do
     send(self(), :refresh)
+    IO.inspect(int, label: "refresh")
     :timer.send_interval(int, :refresh)
   end
 

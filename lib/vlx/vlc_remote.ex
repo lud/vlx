@@ -9,19 +9,20 @@ defmodule Vlx.VLCRemote do
   @gen_opts ~w(name timeout debug spawn_opt hibernate_after)a
 
   def start_link(opts) do
-    {gen_opts, opts} = Keyword.split(opts, @gen_opts)
+    {gen_opts, _opts} = Keyword.split(opts, @gen_opts)
     gen_opts = Keyword.put(gen_opts, :name, __MODULE__)
     Agent.start_link(fn -> connect() end, gen_opts)
   end
 
   def connect do
+    Logger.info("connecting to VLC ...")
     {:ok, com} = VLCCom.connect(config(), 10_000)
     Logger.info("successfully connected to VLC")
     com
   end
 
   defp exec(f) do
-    Agent.get(__MODULE__, f)
+    Agent.get(__MODULE__, f, 20_000)
   end
 
   def play(path) do

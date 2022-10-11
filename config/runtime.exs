@@ -25,7 +25,7 @@ end
 
 config :vlx, :media,
   dir: env!("VLX_MEDIA_DIR", :string!),
-  refresh: String.to_integer(System.get_env("VLX_MEDIA_REFRESH", "5000"))
+  refresh: env!("VLX_MEDIA_REFRESH", :integer!, "5000")
 
 config :vlx, :vlc,
   vlc_bin: env!("VLX_VLC_BIN", :string!, "vlc"),
