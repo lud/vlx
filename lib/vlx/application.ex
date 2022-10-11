@@ -11,7 +11,7 @@ defmodule Vlx.Application do
       Vlx.Sidekick,
       {Phoenix.PubSub, name: Vlx.PubSub},
       Vlx.MediaServer,
-      Vlx.VLCRemote,
+      Vlx.VlcRemote,
       VlxWeb.Telemetry,
       VlxWeb.Endpoint
     ]

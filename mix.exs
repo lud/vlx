@@ -34,7 +34,11 @@ defmodule Vlx.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      # app
       {:dotenvy, "~> 0.6"},
+      {:req, "~> 0.3.1"},
+
+      # phoenix
       {:phoenix, "~> 1.6.12"},
       {:phoenix_html, "~> 3.0"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},

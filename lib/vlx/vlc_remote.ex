@@ -1,52 +1,78 @@
-defmodule Vlx.VLCRemote do
+defmodule Vlx.VlcRemote.CompileTime do
+  defmacro defcommand({fun_name, _, []}, do: _block) do
+    raise "invalid command #{fun_name}, at least one argument is required"
+  end
+
+  defmacro defcommand({fun_name, _, [client_arg | args] = all_args}, do: block) do
+    impl_name = :"command__#{fun_name}"
+
+    quote do
+      def unquote(fun_name)(unquote_splicing(args)) do
+        with_client(fn client -> unquote(impl_name)(client, unquote_splicing(args)) end)
+      end
+
+      @doc false
+      defp unquote(impl_name)(unquote_splicing(all_args)) do
+        unquote(block)
+      end
+    end
+    |> tap(&Macro.to_string/1)
+  end
+
+  defmacro defcommand(arg1, arg2) do
+    binding |> IO.inspect(label: "binding")
+    raise "invalid macro call"
+  end
+end
+
+defmodule Vlx.VlcRemote do
   @moduledoc """
   A process to control VLC with TCP.
   """
-  alias Vlx.VLCCom
-  use Agent
+  alias Vlx.VlcClient
+  use GenServer
   require Logger
+  import Vlx.VlcRemote.CompileTime
 
   @gen_opts ~w(name timeout debug spawn_opt hibernate_after)a
 
   def start_link(opts) do
     {gen_opts, _opts} = Keyword.split(opts, @gen_opts)
     gen_opts = Keyword.put(gen_opts, :name, __MODULE__)
-    Agent.start_link(fn -> connect() end, gen_opts)
+    GenServer.start_link(__MODULE__, opts, gen_opts)
   end
 
-  def connect do
+  def with_client(f) do
+    GenServer.call(__MODULE__, {:exec, f}, 20_000)
+  end
+
+  defcommand fetch_playback_info(client) do
+    raise "todo"
+  end
+
+  @impl true
+  def init([]) do
+    send(self(), :reconnect)
+    {:ok, %{status: :disconnected, client: nil}}
+  end
+
+  @impl true
+  def handle_info(:reconnect, state) do
     Logger.info("connecting to VLC ...")
-    {:ok, com} = VLCCom.connect(config(), 10_000)
-    Logger.info("successfully connected to VLC")
-    com
-  end
+    config = Application.fetch_env!(:vlx, :vlc)
+    port = Keyword.fetch!(config, :port)
+    password = Keyword.fetch!(config, :password)
+    client = VlcClient.new(host: "localhost", port: port, password: password)
 
-  defp exec(f) do
-    Agent.get(__MODULE__, f, 20_000)
-  end
+    case VlcClient.connected?(client) do
+      true ->
+        Logger.info("successfully connected to VLC")
+        {:noreply, %{state | status: :connected, client: client}}
 
-  def play(path) do
-    exec(fn com -> VLCCom.play(com, path) end)
-  end
-
-  def set_audio(id) do
-    exec(fn com -> VLCCom.atrack(com, id) end)
-  end
-
-  def set_subs(id) do
-    exec(fn com -> VLCCom.strack(com, id) end)
-  end
-
-  def fetch_payback_info do
-    exec(fn com ->
-      audio = VLCCom.list_audio_tracks(com)
-      subs = VLCCom.list_subs_tracks(com)
-      title = VLCCom.get_title(com)
-      %{audio_tracks: audio, subs_tracks: subs, title: title}
-    end)
-  end
-
-  defp config do
-    Map.new(Application.fetch_env!(:vlx, :vlc))
+      false ->
+        Logger.error("could not connect to VLC")
+        Process.send_after(self(), :reconnect, 1000)
+        {:noreply, %{state | status: :connected}}
+    end
   end
 end

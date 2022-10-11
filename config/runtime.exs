@@ -10,15 +10,14 @@ Dotenvy.source([".env"])
 # any compile-time configuration in here, as it won't be applied.
 # The block below contains prod specific runtime configuration.
 
-config :vlx, VlxWeb.Endpoint, server: true
+# config :vlx, VlxWeb.Endpoint, server: true
 
 config :vlx, :media,
   dir: env!("VLX_MEDIA_DIR", :string!),
-  refresh: env!("VLX_MEDIA_REFRESH", :integer!, "5000")
+  refresh: max(env!("VLX_MEDIA_REFRESH", :integer!, 5), 1) * 1000
 
 config :vlx, :vlc,
-  vlc_bin: env!("VLX_VLC_BIN", :string!, "vlc"),
-  port: env!("VLX_VLC_PORT", :integer!, "5555"),
+  port: env!("VLX_VLC_PORT", :integer!, 8080),
   password: env!("VLX_VLC_PASSWORD", :string!, "dev")
 
 if config_env() == :prod do
