@@ -21,7 +21,7 @@ defmodule Vlx.RCMonitor do
   end
 
   @impl GenServer
-  def init(opts) do
+  def init([]) do
     # Instead of using monitors we will link to the clients. So we kill them all
     # if this process exits, and they must register again.
     Process.flag(:trap_exit, true)
@@ -31,17 +31,15 @@ defmodule Vlx.RCMonitor do
       |> Application.fetch_env!(:media)
       |> Keyword.fetch!(:refresh_interval)
 
-    # vlc_refresh = 10_000
-    vlc_refresh = 1000
+    vlc_refresh = 10_000
 
-    schedules =
-      state = %{
-        schedules: %{
-          media: media_refresh,
-          vlc_status: vlc_refresh
-        },
-        clients: %{}
-      }
+    state = %{
+      schedules: %{
+        media: media_refresh,
+        vlc_status: vlc_refresh
+      },
+      clients: %{}
+    }
 
     start_schedules(state)
     schedule_now(state)
@@ -56,11 +54,12 @@ defmodule Vlx.RCMonitor do
   end
 
   defp schedule_now(%{schedules: skeds}, force? \\ false) do
-    Enum.each(skeds, fn {name, interval} ->
+    Enum.each(skeds, fn {name, _interval} ->
       send(self(), {:refresh, name, force?})
     end)
   end
 
+  @impl true
   def handle_call({:register, pid}, _, state) do
     first_client? = map_size(state.clients) == 0
     state = put_in(state.clients[pid], true)
@@ -93,14 +92,14 @@ defmodule Vlx.RCMonitor do
   end
 
   defp refresh(:media, force?) do
-    :ok = Vlx.MediaServer.publish_media(force?)
+    Vlx.MediaServer.publish_media(force?)
   end
 
   defp refresh(:vlc_status, force?) do
-    :ok = Vlx.VlcRemote.publish_status(force?)
+    Vlx.VlcRemote.publish_status(force?)
   end
 
-  defp refresh(name) do
+  defp refresh(name, _) do
     Logger.error("no refresh implementation defined for #{inspect(name)}")
   end
 end

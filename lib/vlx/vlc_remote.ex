@@ -104,8 +104,13 @@ defmodule Vlx.VlcRemote do
       false ->
         Logger.error("could not connect to VLC")
         Process.send_after(self(), :reconnect, 1000)
-        {:noreply, %{state | connstatus: :connected}}
+        {:noreply, %{state | connstatus: :disconnected}}
     end
+  end
+
+  def handle_info(:force_refresh, state) do
+    {:reply, _, state} = handle_call({:republish, true}, nil, state)
+    {:noreply, state}
   end
 
   @impl true
@@ -117,9 +122,13 @@ defmodule Vlx.VlcRemote do
   def handle_call({:exec, f}, from, state) do
     state =
       case f.(state.client) do
-        {:ok, %{"apiversion" => 3} = raw_status} = reply ->
+        {:ok, %{"apiversion" => 3}} = reply ->
+          # VLC did not update its status from the file when changing file,
+          # so we will delay the status update a little bit.
+          Process.send_after(self(), :force_refresh, 1000)
+
           GenServer.reply(from, reply)
-          handle_new_status(raw_status, state)
+          state
 
         other ->
           GenServer.reply(from, other)
@@ -129,7 +138,7 @@ defmodule Vlx.VlcRemote do
     {:noreply, state}
   end
 
-  def handle_call({:republish, force?}, from, state) do
+  def handle_call({:republish, force?}, _, state) do
     case Vlx.VlcClient.get_status(state.client) do
       {:ok, raw_status} ->
         state = handle_new_status(raw_status, state, force?)
