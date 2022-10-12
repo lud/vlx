@@ -4,6 +4,7 @@ defmodule VlxWeb.Components.MediaList do
   alias Phoenix.LiveView.JS
   alias Vlx.MediaLib.{MFile, MDir}
   alias VlxWeb.Components.Text
+  alias VlxWeb.Components.Icons
 
   def index(assigns) do
     case assigns.media do
@@ -69,11 +70,11 @@ defmodule VlxWeb.Components.MediaList do
       <%= case item do %>
       <% %MFile{name: name, path: path} -> %>
           <li class="pl-4 cursor-pointer" phx-click={JS.push("play", value: %{path: path})}>
-            <span class="media-file">▶ <%= name %></span>
+            <span class="media-file"><Icons.play /> <%= name %></span>
           </li>
         <% %MDir{name: name, children: children} -> %>
           <li class="pl-4">
-            <span class="media-dir">🗀 <%= name %></span>
+            <span class="media-dir"><Icons.folder /> <%= name %></span>
             <%= render_list_recursive(%{media: children}) %>
           </li>
       <% end %>
@@ -88,16 +89,26 @@ defmodule VlxWeb.Components.MediaList do
     <%= for item <- @media do %>
       <%= case item do %>
       <% %MFile{name: name, path: path} -> %>
-          <li class="cursor-pointer" phx-click={JS.push("play", value: %{path: path})}>
-            <span class="media-file">▶ <%= name %></span>
+          <li class=" flex flex-row cursor-pointer" phx-click={JS.push("play", value: %{path: path})}>
+            <Icons.play class="text-orange-500"/> <span class="ml-2"><%= name %></span>
           </li>
         <% {:dir_header, dirs} -> %>
-          <li class="mt-2">
-            <span class="media-dir">🗀 <%= Enum.intersperse(dirs, " / ") %></span>
+          <li class="mt-2 flex flex-row">
+            <Icons.folder /> <span class="ml-2"><%= Enum.map_intersperse(dirs, " / ",&shorten_name/1) %></span>
           </li>
       <% end %>
     <% end %>
     </ul>
     """
+  end
+
+  @allowed_size 30
+
+  defp shorten_name(str) do
+    case str do
+      # yeah I know UTF-8 is multibyte, but the approximation is fine
+      <<_::binary-size(@allowed_size), _::binary>> -> String.slice(str, 0, @allowed_size) <> "…"
+      _ -> str
+    end
   end
 end
