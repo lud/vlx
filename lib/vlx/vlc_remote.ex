@@ -20,7 +20,6 @@ defmodule Vlx.VlcRemote.CompileTime do
   end
 
   defmacro defcommand(arg1, arg2) do
-    binding |> IO.inspect(label: "binding")
     raise "invalid macro call"
   end
 
@@ -79,7 +78,8 @@ defmodule Vlx.VlcRemote do
     relative_seek: 2,
     resume_playback: 1,
     set_audio_track: 2,
-    set_subtitle_track: 2
+    set_subtitle_track: 2,
+    toggle_fullscreen: 1
   )
 
   @impl true
@@ -165,20 +165,6 @@ defmodule Vlx.VlcRemote do
   end
 
   defp compute_status(raw_status) do
-    %{
-      audio_tracks: or_empty(VlcStatus.get_streams(raw_status, :audio)),
-      subs_tracks: or_empty(VlcStatus.get_streams(raw_status, :subtitles)),
-      title: or_default(VlcStatus.get_filename(raw_status), "No File"),
-      state:
-        case raw_status do
-          %{"state" => state} -> state
-          _ -> "unknown"
-        end
-    }
+    VlcStatus.from_raw(raw_status)
   end
-
-  defp or_empty({:ok, list}), do: list
-  defp or_empty({:error, _}), do: []
-  defp or_default({:ok, v}, _), do: v
-  defp or_default({:error, _}, default), do: default
 end

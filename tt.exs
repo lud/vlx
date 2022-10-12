@@ -8,14 +8,14 @@ movie =
 # VlcClient.empty_playlist(client)
 # |> IO.inspect(label: "empty_playlist")
 
-VlcClient.play_file(client, movie)
-|> IO.inspect(label: "play_file")
+# VlcClient.play_file(client, movie)
+# |> IO.inspect(label: "play_file")
 
 # VlcClient.set_subtitle_track(client, 1)
 # |> IO.inspect(label: "set_subtitle_track")
 
-VlcClient.get_status(client)
-|> IO.inspect(label: "get_status")
+# VlcClient.get_status(client)
+# |> IO.inspect(label: "get_status")
 
 # VlcClient.get_streams(client)
 # |> IO.inspect(label: "get_streams")
@@ -35,5 +35,5 @@ VlcClient.get_status(client)
 # VlcClient.pause_playback(client)
 # |> IO.inspect(label: "resume_playback")
 
-VlcClient.relative_seek(client, -1)
-|> IO.inspect(label: "relative_seek")
+# VlcClient.relative_seek(client, -1)
+# |> IO.inspect(label: "relative_seek")

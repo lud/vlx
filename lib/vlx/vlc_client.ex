@@ -119,4 +119,8 @@ defmodule Vlx.VlcClient do
   def empty_playlist(client) do
     get_json(client, "/requests/status.json", command: :pl_empty)
   end
+
+  def toggle_fullscreen(client) do
+    get_json(client, "/requests/status.json", command: :fullscreen)
+  end
 end

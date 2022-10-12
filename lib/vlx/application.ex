@@ -14,7 +14,8 @@ defmodule Vlx.Application do
       Vlx.VlcRemote,
       Vlx.RCMonitor,
       VlxWeb.Telemetry,
-      VlxWeb.Endpoint
+      VlxWeb.Endpoint,
+      Vlx.IpDisplay
     ]
 
     opts = [strategy: :one_for_one, name: Vlx.Supervisor]

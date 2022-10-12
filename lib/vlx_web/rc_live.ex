@@ -11,10 +11,11 @@ defmodule VlxWeb.RCLive do
     socket =
       assign(socket,
         media: [],
-        tab: :media,
-        page_title: "Loading",
-        subs_tracks: [],
-        audio_tracks: []
+        tab: :playback,
+        page_title: nil,
+        sub_tracks: [],
+        audio_tracks: [],
+        vlc_status: Vlx.VlcStatus.empty()
       )
 
     if connected?(socket) do
@@ -33,7 +34,7 @@ defmodule VlxWeb.RCLive do
       <Navbar.index current={@tab}/>
       <div class="container p-4">
         <%= case @tab do %>
-          <% :playback -> %> <PlayBackControl.index title={@page_title} subs_tracks={@subs_tracks} audio_tracks={@audio_tracks} />
+          <% :playback -> %> <PlayBackControl.index title={@page_title} vlc_status={@vlc_status} />
           <% :media -> %> <MediaList.index media={@media} />
         <% end %>
       </div>
@@ -46,14 +47,8 @@ defmodule VlxWeb.RCLive do
   end
 
   def handle_info({:vlc_status, info}, socket) do
-    %{audio_tracks: audio, subs_tracks: subs, title: title} = info
-
-    socket =
-      assign(socket,
-        page_title: title,
-        audio_tracks: normalize_audio_tracks(audio),
-        subs_tracks: normalize_sub_tracks(subs)
-      )
+    %{title: title} = info
+    socket = assign(socket, vlc_status: info, page_title: title)
 
     {:noreply, socket}
   end
@@ -81,6 +76,26 @@ defmodule VlxWeb.RCLive do
     {:noreply, socket}
   end
 
+  def handle_event("pb_play", _, socket) do
+    {:ok, _} = VlcRemote.resume_playback()
+    {:noreply, assign_status(socket, :state, "playing")}
+  end
+
+  def handle_event("pb_pause", _, socket) do
+    {:ok, _} = VlcRemote.pause_playback()
+    {:noreply, assign_status(socket, :state, "paused")}
+  end
+
+  def handle_event("pb_rel_seek", %{"seek" => seek}, socket) do
+    {:ok, _} = VlcRemote.relative_seek(String.to_integer(seek))
+    {:noreply, socket}
+  end
+
+  def handle_event("vlc_fullscreen_toggle", _, socket) do
+    {:ok, _} = VlcRemote.toggle_fullscreen()
+    {:noreply, assign_status(socket, :fullscreen, not socket.assigns.vlc_status.fullscreen)}
+  end
+
   def handle_event("set_tab", %{"tab" => tab}, socket) do
     tab =
       case tab do
@@ -91,37 +106,9 @@ defmodule VlxWeb.RCLive do
     {:noreply, assign(socket, :tab, tab)}
   end
 
-  defp normalize_audio_tracks(audio) do
-    audio
-    |> Enum.map(fn {id, info} ->
-      label = [
-        case info do
-          %{"Langue_" => lang} -> lang
-          _ -> "Unknown"
-        end
-      ]
-
-      %{selected: false, id: id, label: label}
-    end)
-    |> IO.inspect(label: "audio")
-  end
-
-  defp normalize_sub_tracks(subs) do
-    subs
-    |> Enum.map(fn {id, info} ->
-      label = [
-        case info do
-          %{"Langue_" => lang} -> lang
-          _ -> "Unknown"
-        end,
-        case info do
-          %{"Description" => desc} -> [" – ", desc]
-          _ -> []
-        end
-      ]
-
-      %{selected: false, id: id, label: label}
-    end)
-    |> IO.inspect(label: "subs")
+  # used for optimistic updates
+  defp assign_status(socket, key, value) do
+    vlc_status = Map.put(socket.assigns.vlc_status, key, value)
+    assign(socket, :vlc_status, vlc_status)
   end
 end
