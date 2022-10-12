@@ -59,11 +59,11 @@ defmodule Vlx.VlcClient do
     end
   end
 
-  def get_streams(%C{} = client, type \\ :all) do
-    with {:ok, status} <- get_status(client) do
-      Vlx.VlcStatus.get_streams(status, type)
-    end
-  end
+  # def get_streams(%C{} = client, type \\ :all) do
+  #   with {:ok, status} <- get_status(client) do
+  #     Vlx.VlcStatus.get_streams(status, type)
+  #   end
+  # end
 
   def get_status(%C{} = client) do
     get_json(client, "/requests/status.json")

@@ -153,7 +153,7 @@ defmodule Vlx.VlcRemote do
     end
   end
 
-  defp handle_new_status(raw_status, state, force? \\ false) do
+  defp handle_new_status(raw_status, state, force?) do
     vlc_status = compute_status(raw_status)
 
     if force? or vlc_status != state.vlc_status do

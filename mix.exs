@@ -37,6 +37,7 @@ defmodule Vlx.MixProject do
       # app
       {:dotenvy, "~> 0.6"},
       {:req, "~> 0.3.1"},
+      {:eqrcode, "~> 0.1.10"},
 
       # phoenix
       {:phoenix, "~> 1.6.14"},

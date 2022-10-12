@@ -8,14 +8,14 @@ defmodule Vlx.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      Vlx.IpDisplay,
       Vlx.Sidekick,
       {Phoenix.PubSub, name: Vlx.PubSub},
       Vlx.MediaServer,
       Vlx.VlcRemote,
       Vlx.RCMonitor,
       VlxWeb.Telemetry,
-      VlxWeb.Endpoint,
-      Vlx.IpDisplay
+      VlxWeb.Endpoint
     ]
 
     opts = [strategy: :one_for_one, name: Vlx.Supervisor]

@@ -19,6 +19,7 @@ defmodule VlxWeb.RCLive do
       )
 
     if connected?(socket) do
+      :ok = Vlx.IpDisplay.stop_qrcode_display()
       :ok = Vlx.PubSub.listen_media()
       :ok = Vlx.PubSub.listen_vlc_status()
       :ok = Vlx.RCMonitor.register()
