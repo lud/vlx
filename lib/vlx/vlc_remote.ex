@@ -67,12 +67,14 @@ defmodule Vlx.VlcRemote do
     GenServer.call(__MODULE__, {:republish, force?})
   end
 
+  def get_last_status do
+    GenServer.call(__MODULE__, :last_status)
+  end
+
   forward_calls(
     connected?: 1,
     empty_playlist: 1,
     get_status: 1,
-    get_streams: 1,
-    get_streams: 2,
     pause_playback: 1,
     play_file: 2,
     relative_seek: 2,
@@ -85,7 +87,7 @@ defmodule Vlx.VlcRemote do
   @impl true
   def init([]) do
     send(self(), :reconnect)
-    {:ok, %{connstatus: :disconnected, client: nil, vlc_status: %{}}}
+    {:ok, %{connstatus: :disconnected, client: nil, vlc_status: Vlx.VlcStatus.empty()}}
   end
 
   @impl true
@@ -151,6 +153,16 @@ defmodule Vlx.VlcRemote do
       _other ->
         {:reply, :ok, state}
     end
+  end
+
+  def handle_call(:last_status, _, state) do
+    reply =
+      case state.connstatus do
+        :disconnected -> :disconnected
+        :connected -> state.vlc_status
+      end
+
+    {:reply, reply, state}
   end
 
   defp handle_new_status(raw_status, state, force?) do

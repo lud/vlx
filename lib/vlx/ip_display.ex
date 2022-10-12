@@ -19,20 +19,48 @@ defmodule Vlx.IpDisplay do
 
     case find_ip do
       nil ->
-        {:stop, :no_ip_found}
+        :ignore
 
       {a, b, c, d} ->
         send(self(), :refresh)
-        {:ok, %{url: "http://#{a}.#{b}.#{c}.#{d}:#{port}", keep_qr_display: true}}
+
+        state = %{
+          url: "http://#{a}.#{b}.#{c}.#{d}:#{port}",
+          keep_qr_display: true,
+          qr_path: :code.priv_dir(:vlx) |> Path.join("qrcode.png")
+        }
+
+        send(self(), :refresh)
+        {:ok, state, {:continue, :after_init}}
     end
   end
 
-  def handle_info(:refresh, %{url: url, keep_qr_display: keep?} = state) do
+  def handle_continue(:after_init, state) do
+    %{url: url, qr_path: path} = state
+
+    qrcode =
+      url
+      |> EQRCode.encode()
+      |> EQRCode.png()
+
+    path = File.write!(path, qrcode)
+
+    {:noreply, state}
+  end
+
+  def handle_info(:refresh, %{qr_path: qr_path, keep_qr_display: keep?} = state) do
     # VLC keeps images for 10 seconds. We will re-add the qr-code every 9
-    # seconds
+    # seconds (if it fails, retry after 1 second)
     if keep? do
       Process.send_after(self(), :refresh, 9_000)
-      display_url(url)
+
+      delay =
+        case send_file(qr_path) do
+          :ok -> 9_000
+          :error -> 1_000
+        end
+
+      Process.send_after(self(), :refresh, delay)
     end
 
     {:noreply, state}
@@ -42,17 +70,20 @@ defmodule Vlx.IpDisplay do
     {:reply, :ok, %{state | keep_qr_display: false}}
   end
 
-  defp display_url(url) do
-    qrcode =
-      url
-      |> EQRCode.encode()
-      |> EQRCode.png()
+  defp send_file(path) do
+    case Vlx.VlcRemote.get_last_status() do
+      %Vlx.VlcStatus{fullscreen: full?} ->
+        if not full? do
+          # don't care if fails
+          Vlx.VlcRemote.toggle_fullscreen()
+        end
 
-    path = :code.priv_dir(:vlx) |> Path.join("qrcode.png")
+        Vlx.VlcRemote.play_file(path)
+        :ok
 
-    File.write!(path, qrcode)
-
-    Vlx.VlcRemote.play_file(path)
+      :disconnected ->
+        :error
+    end
   end
 
   defp find_ip do
