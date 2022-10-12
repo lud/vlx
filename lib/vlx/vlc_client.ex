@@ -48,7 +48,7 @@ defmodule Vlx.VlcClient do
   end
 
   defp get_json(client, path, query_params) do
-    path = path <> "?" <> URI.encode_query(query_params)
+    path = path <> "?" <> URI.encode_query(query_params, :rfc3986)
     client |> build_req(path) |> log_get() |> ok_json()
   end
 
