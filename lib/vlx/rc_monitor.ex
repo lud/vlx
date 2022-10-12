@@ -75,12 +75,16 @@ defmodule Vlx.RCMonitor do
 
   @impl true
 
-  # def handle_info({:refresh, name}, state) when map_size(state.clients) == 0 do
-  #   Logger.debug("ignored refresh for #{name}: no client")
-  #   {:noreply, state}
-  # end
+  def handle_info({:refresh, name, _}, state) when map_size(state.clients) == 0 do
+    Logger.debug("ignored refresh for #{inspect(name)}: no client")
+    {:noreply, state}
+  end
 
   def handle_info({:refresh, name, force?}, state) do
+    Logger.debug(
+      "refresh #{inspect(name)}, #{map_size(state.clients)} clients #{inspect(state.clients)}"
+    )
+
     refresh(name, force?)
     {:noreply, state}
   end
