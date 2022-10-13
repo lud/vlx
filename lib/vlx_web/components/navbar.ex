@@ -5,8 +5,8 @@ defmodule VlxWeb.Components.Navbar do
     ~H"""
     <nav class="bg-white shadow dark:bg-gray-800">
       <div class="container flex items-center justify-between p-6 mx-auto text-gray-800 dark:text-gray-300">
-        <div>
-          <span class="text-2xl font-mono font-bold transition-colors duration-300 transform lg:text-3xl hover:text-gray-700">vlx</span>
+        <div class="pt-2">
+          <span class="text-3xl font-mono font-bold transition-colors duration-300 transform lg:text-3xl hover:text-gray-700">vlx</span>
         </div>
         <div>
           <.navlink text="Playback" tab="playback" active={@current == :playback}/>

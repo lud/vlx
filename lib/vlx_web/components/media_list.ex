@@ -19,7 +19,6 @@ defmodule VlxWeb.Components.MediaList do
       list ->
         flat = flatten_list(list)
 
-        # <%= render_list_recursive(%{media: list}) %>
         ~H"""
         <div>
           <Text.page_header title="Media" />
@@ -63,26 +62,6 @@ defmodule VlxWeb.Components.MediaList do
     end)
   end
 
-  defp render_list_recursive(assigns) do
-    ~H"""
-    <ul class="break-all">
-    <%= for item <- @media do %>
-      <%= case item do %>
-      <% %MFile{name: name, path: path} -> %>
-          <li class="pl-4 cursor-pointer" phx-click={JS.push("play", value: %{path: path})}>
-            <span class="media-file"><Icons.large icon="play" /> <%= name %></span>
-          </li>
-        <% %MDir{name: name, children: children} -> %>
-          <li class="pl-4">
-            <span class="media-dir"><Icons.large icon="folder" /> <%= name %></span>
-            <%= render_list_recursive(%{media: children}) %>
-          </li>
-      <% end %>
-    <% end %>
-    </ul>
-    """
-  end
-
   defp render_list_flat(assigns) do
     ~H"""
     <ul class="break-all">
@@ -90,7 +69,7 @@ defmodule VlxWeb.Components.MediaList do
       <%= case item do %>
       <% %MFile{name: name, path: path} -> %>
           <li class="flex flex-row p-2 my-1 border border-gray-500 rounded cursor-pointer" phx-click={JS.push("play", value: %{path: path})}>
-            <Icons.large icon="play" class="text-orange-500"/> <span class="ml-2"><%= name %></span>
+            <Icons.large icon="play" class="text-orange-500 dark:text-orange-300"/> <span class="ml-2"><%= name %></span>
           </li>
         <% {:dir_header, dirs} -> %>
           <li class="text-gray-400 mt-8 mb-4 flex flex-row">

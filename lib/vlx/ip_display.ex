@@ -82,7 +82,6 @@ defmodule Vlx.IpDisplay do
         # this is not a true status from vlc, but a dummy one from
         # initialization, we will retry later
         Logger.debug("ip display waiting for first actual status")
-        status |> IO.inspect(label: "status")
         :error
 
       {:ok, %Vlx.VlcStatus{title: qrcode, fullscreen: full?}}

@@ -11,7 +11,7 @@ defmodule VlxWeb.RCLive do
     socket =
       assign(socket,
         media: [],
-        tab: :media,
+        tab: :playback,
         page_title: nil,
         sub_tracks: [],
         audio_tracks: [],
@@ -33,7 +33,7 @@ defmodule VlxWeb.RCLive do
     ~H"""
     <div>
       <Navbar.index current={@tab}/>
-      <div class="container p-4">
+      <div class="container p-4 mx-auto">
         <%= case @tab do %>
           <% :playback -> %> <PlayBackControl.index title={@page_title} vlc_status={@vlc_status} />
           <% :media -> %> <MediaList.index media={@media} />

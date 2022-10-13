@@ -27,10 +27,10 @@ defmodule VlxWeb.Components.PlayBackControl do
     <div>
       <Text.page_header title={@title} smalltop={if(@smalltop?, do: "Now Playing")} break={true} />
 
-      <Text.section_header title="Audio" />
+      <Text.section_header title="Audio" icon="audio" />
       <.render_audio_tracks tracks={@audio_tracks} />
 
-      <Text.section_header title="Subtitles" />
+      <Text.section_header title="Subtitles" icon="subtitles" />
       <.render_sub_tracks tracks={@sub_tracks} />
 
       <.playback_buttons playstate={@playstate} fullscreen={@vlc_status.fullscreen} />
@@ -44,10 +44,14 @@ defmodule VlxWeb.Components.PlayBackControl do
     <ul>
       <%= for %{id: id, label: label, selected: sel} <- @tracks do %>
         <li
-          class={"cursor-pointer pl-2 #{if(sel, do: "text-orange-500", else: "")}"}
+          class={"p-2 my-1 border border-gray-500 rounded cursor-pointer #{if(sel, do: "text-orange-500", else: "")}"}
           phx-click="set_audio" phx-value-id={id}
           ><%= label %></li>
       <% end %>
+      <li
+          class={"p-2 my-1 border border-gray-500 rounded cursor-pointer"}
+          phx-click="set_audio" phx-value-id={-1}
+          >Disable</li>
     </ul>
     """
   end
@@ -57,10 +61,14 @@ defmodule VlxWeb.Components.PlayBackControl do
     <ul>
       <%= for %{id: id, label: label, selected: sel} <- @tracks do %>
         <li
-          class={"cursor-pointer pl-2 #{if(sel, do: "text-orange-500", else: "")}"}
+          class={"p-2 my-1 border border-gray-500 rounded cursor-pointer pl-2 #{if(sel, do: "text-orange-500", else: "")}"}
           phx-click="set_subs" phx-value-id={id}
           ><%= label %></li>
       <% end %>
+      <li
+          class={"p-2 my-1 border border-gray-500 rounded cursor-pointer"}
+          phx-click="set_subs" phx-value-id={-1}
+          >Disable</li>
     </ul>
     """
   end
@@ -79,7 +87,7 @@ defmodule VlxWeb.Components.PlayBackControl do
     rounded\
     """
 
-    assign(assigns, :class, class)
+    assigns = assign(assigns, :class, class)
 
     ~H"""
     <div class="mt-4 flex flex-row justify-center">
