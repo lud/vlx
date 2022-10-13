@@ -1,12 +1,13 @@
 defmodule Vlx.IpDisplay do
   use GenServer, restart: :temporary
+  require Logger
 
   def start_link(arg) do
     GenServer.start_link(__MODULE__, arg, name: __MODULE__)
   end
 
   def stop_qrcode_display do
-    GenServer.call(__MODULE__, :stop_qr_display)
+    GenServer.call(__MODULE__, :stop_qr_display, 10_000)
   end
 
   def init(_arg) do
@@ -22,8 +23,6 @@ defmodule Vlx.IpDisplay do
         :ignore
 
       {a, b, c, d} ->
-        send(self(), :refresh)
-
         state = %{
           url: "http://#{a}.#{b}.#{c}.#{d}:#{port}",
           keep_qr_display: true,
@@ -31,6 +30,7 @@ defmodule Vlx.IpDisplay do
         }
 
         send(self(), :refresh)
+
         {:ok, state, {:continue, :after_init}}
     end
   end
@@ -52,15 +52,16 @@ defmodule Vlx.IpDisplay do
     # VLC keeps images for 10 seconds. We will re-add the qr-code every 9
     # seconds (if it fails, retry after 1 second)
     if keep? do
-      Process.send_after(self(), :refresh, 9_000)
-
       delay =
-        case send_file(qr_path) do
+        case maybe_send_file(qr_path) do
           :ok -> 9_000
           :error -> 1_000
+          :ignore -> false
         end
 
-      Process.send_after(self(), :refresh, delay)
+      if delay do
+        Process.send_after(self(), :refresh, delay)
+      end
     end
 
     {:noreply, state}
@@ -70,19 +71,38 @@ defmodule Vlx.IpDisplay do
     {:reply, :ok, %{state | keep_qr_display: false}}
   end
 
-  defp send_file(path) do
+  defp maybe_send_file(path) do
     case Vlx.VlcRemote.get_last_status() do
-      %Vlx.VlcStatus{fullscreen: full?} ->
-        if not full? do
-          # don't care if fails
-          Vlx.VlcRemote.toggle_fullscreen()
+      {:error, :disconnected} ->
+        Logger.error("cannot display, error")
+        :error
+
+      {:ok, %Vlx.VlcStatus{actual: false} = status} ->
+        # this is not a true status from vlc, but a dummy one from
+        # initialization, we will retry later
+        Logger.debug("ip display waiting for first actual status")
+        status |> IO.inspect(label: "status")
+        :error
+
+      {:ok, %Vlx.VlcStatus{title: qrcode, fullscreen: full?}}
+      when qrcode in [nil, "qrcode.png"] ->
+        case Vlx.VlcRemote.play_file(path) do
+          {:ok, _} ->
+            # don't care if fails
+            if not full? do
+              Process.sleep(500)
+              Vlx.VlcRemote.toggle_fullscreen()
+            end
+
+            :ok
+
+          {:error, :disconnected} ->
+            :error
         end
 
-        Vlx.VlcRemote.play_file(path)
-        :ok
-
-      :disconnected ->
-        :error
+      {:ok, %Vlx.VlcStatus{title: title}} ->
+        Logger.warn("not displaying IP QR code, file in play: #{inspect(title)}")
+        :ignore
     end
   end
 

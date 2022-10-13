@@ -19,7 +19,7 @@ defmodule Vlx.VlcClient do
 
   defp build_req(%C{host: host, port: port, password: password}, opts)
        when is_list(opts) do
-    Req.new([base_url: "http://#{host}:#{port}", auth: {"", password}] ++ opts)
+    Req.new([base_url: "http://#{host}:#{port}", auth: {"", password}, retry: :never] ++ opts)
   end
 
   defp log_get(request) do

@@ -3,7 +3,7 @@ defmodule Vlx.VlcStatus do
   Extracts informations from VLC status payloads.
   """
 
-  @enforce_keys [:audio_tracks, :sub_tracks, :title, :state, :fullscreen]
+  @enforce_keys [:audio_tracks, :sub_tracks, :title, :state, :fullscreen, :actual]
   defstruct @enforce_keys
 
   def empty do
@@ -12,16 +12,18 @@ defmodule Vlx.VlcStatus do
       sub_tracks: [],
       title: nil,
       state: "unknown",
-      fullscreen: false
+      fullscreen: false,
+      actual: false
     }
   end
 
   def from_raw(raw_status) do
     %__MODULE__{
+      actual: true,
       audio_tracks: or_empty(get_streams(raw_status, :audio)),
       sub_tracks: or_empty(get_streams(raw_status, :subtitles)),
       title: or_default(get_filename(raw_status), nil),
-      fullscreen: Map.get(raw_status, "fullscreen", false),
+      fullscreen: as_bool(Map.get(raw_status, "fullscreen", 0)),
       state:
         case raw_status do
           %{"state" => state} -> state
@@ -82,4 +84,9 @@ defmodule Vlx.VlcStatus do
   defp or_empty({:error, _}), do: []
   defp or_default({:ok, v}, _), do: v
   defp or_default({:error, _}, default), do: default
+
+  defp as_bool(1), do: true
+  defp as_bool(0), do: false
+  defp as_bool(false), do: false
+  defp as_bool(true), do: true
 end

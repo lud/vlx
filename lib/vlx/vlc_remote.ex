@@ -19,7 +19,7 @@ defmodule Vlx.VlcRemote.CompileTime do
     |> tap(&Macro.to_string/1)
   end
 
-  defmacro defcommand(arg1, arg2) do
+  defmacro defcommand(_arg1, _arg2) do
     raise "invalid macro call"
   end
 
@@ -100,12 +100,14 @@ defmodule Vlx.VlcRemote do
 
     case VlcClient.connected?(client) do
       true ->
+        {:ok, raw_status} = VlcClient.get_status(client)
+        state = handle_new_status(raw_status, state, false)
         Logger.info("successfully connected to VLC")
         {:noreply, %{state | connstatus: :connected, client: client}}
 
       false ->
         Logger.error("could not connect to VLC")
-        Process.send_after(self(), :reconnect, 1000)
+        Process.send_after(self(), :reconnect, 500)
         {:noreply, %{state | connstatus: :disconnected}}
     end
   end
@@ -132,6 +134,12 @@ defmodule Vlx.VlcRemote do
           GenServer.reply(from, reply)
           state
 
+        {:error, %Mint.TransportError{reason: :econnrefused}} ->
+          send(self(), :reconnect)
+          GenServer.reply(from, {:error, :disconnected})
+          Logger.error("lost connection to VLC")
+          %{state | connstatus: :disconnected}
+
         other ->
           GenServer.reply(from, other)
           state
@@ -156,13 +164,7 @@ defmodule Vlx.VlcRemote do
   end
 
   def handle_call(:last_status, _, state) do
-    reply =
-      case state.connstatus do
-        :disconnected -> :disconnected
-        :connected -> state.vlc_status
-      end
-
-    {:reply, reply, state}
+    {:reply, {:ok, state.vlc_status}, state}
   end
 
   defp handle_new_status(raw_status, state, force?) do
