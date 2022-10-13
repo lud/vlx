@@ -79,20 +79,22 @@ defmodule VlxWeb.Components.PlayBackControl do
     rounded\
     """
 
+    assign(assigns, :class, class)
+
     ~H"""
     <div class="mt-4 flex flex-row justify-center">
-      <button phx-click="pb_rel_seek" phx-value-seek="-10" class={class}><Icons.backward /></button>
+      <button phx-click="pb_rel_seek" phx-value-seek="-10" class={@class}><Icons.large icon="backward" /></button>
       <%= if @playstate == "playing" do %>
-        <button phx-click="pb_pause" class={class}><Icons.pause /></button>
+        <button phx-click="pb_pause" class={@class}><Icons.large icon="pause" /></button>
       <% else %>
-        <button phx-click="pb_play" class={class}><Icons.play /></button>
+        <button phx-click="pb_play" class={@class}><Icons.large icon="play" /></button>
       <% end %>
-      <button phx-click="pb_rel_seek" phx-value-seek="+10" class={class}><Icons.forward /></button>
-      <button phx-click="vlc_fullscreen_toggle" class={class <> " ml-8"}>
+      <button phx-click="pb_rel_seek" phx-value-seek="+10" class={@class}><Icons.large icon="forward" /></button>
+      <button phx-click="vlc_fullscreen_toggle" class={@class <> "ml-8"}>
         <%= if @fullscreen do %>
-          <Icons.no_fullscreen />
+          <Icons.large icon="no_fullscreen" />
         <% else %>
-          <Icons.fullscreen />
+          <Icons.large icon="fullscreen" />
         <% end %>
       </button>
     </div>

@@ -68,6 +68,7 @@ defmodule Vlx.IpDisplay do
   end
 
   def handle_call(:stop_qr_display, _, state) do
+    Logger.info("IP Display disabled")
     {:reply, :ok, %{state | keep_qr_display: false}}
   end
 
@@ -90,8 +91,8 @@ defmodule Vlx.IpDisplay do
           {:ok, _} ->
             # don't care if fails
             if not full? do
-              Process.sleep(500)
-              Vlx.VlcRemote.toggle_fullscreen()
+              # Process.sleep(500)
+              # Vlx.VlcRemote.toggle_fullscreen()
             end
 
             :ok

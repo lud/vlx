@@ -11,7 +11,7 @@ defmodule VlxWeb.RCLive do
     socket =
       assign(socket,
         media: [],
-        tab: :playback,
+        tab: :media,
         page_title: nil,
         sub_tracks: [],
         audio_tracks: [],
