@@ -17,12 +17,12 @@ defmodule VlxWeb.Components.MediaList do
         """
 
       list ->
-        flat = flatten_list(list)
+        assigns = assign(assigns, :flat, flatten_list(list))
 
         ~H"""
         <div>
           <Text.page_header title="Media" />
-          <%= render_list_flat(%{media: flat}) %>
+          <.render_list_flat media={@flat} last_clicked_path={@last_clicked_path} />
         </div>
         """
     end
@@ -68,7 +68,7 @@ defmodule VlxWeb.Components.MediaList do
     <%= for item <- @media do %>
       <%= case item do %>
       <% %MFile{name: name, path: path} -> %>
-          <li class="flex flex-row p-2 my-1 border border-gray-500 rounded cursor-pointer" phx-click={JS.push("play", value: %{path: path})}>
+          <li class={"flex flex-row p-2 my-1 border border-gray-500 rounded cursor-pointer #{if(@last_clicked_path == path, do: "text-orange-500", else: "")}"} phx-click={JS.push("play", value: %{path: path})}>
             <Icons.large icon="play" class="text-orange-500 dark:text-orange-300"/> <span class="ml-2"><%= name %></span>
           </li>
         <% {:dir_header, dirs} -> %>

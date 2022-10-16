@@ -28,10 +28,10 @@ defmodule VlxWeb.Components.PlayBackControl do
       <Text.page_header title={@title} smalltop={if(@smalltop?, do: "Now Playing")} break={true} />
 
       <Text.section_header title="Audio" icon="audio" />
-      <.render_audio_tracks tracks={@audio_tracks} />
+      <.render_audio_tracks tracks={@audio_tracks} last_clicked_audio={@last_clicked_audio} />
 
       <Text.section_header title="Subtitles" icon="subtitles" />
-      <.render_sub_tracks tracks={@sub_tracks} />
+      <.render_sub_tracks tracks={@sub_tracks} last_clicked_subs={@last_clicked_subs} />
 
       <.playback_buttons playstate={@playstate} fullscreen={@vlc_status.fullscreen} />
 
@@ -44,12 +44,12 @@ defmodule VlxWeb.Components.PlayBackControl do
     <ul>
       <%= for %{id: id, label: label, selected: sel} <- @tracks do %>
         <li
-          class={"p-2 my-1 border border-gray-500 rounded cursor-pointer #{if(sel, do: "text-orange-500", else: "")}"}
+          class={"p-2 my-1 border border-gray-500 rounded cursor-pointer #{if(@last_clicked_audio == id, do: "text-orange-500", else: "")}"}
           phx-click="set_audio" phx-value-id={id}
           ><%= label %></li>
       <% end %>
       <li
-          class={"p-2 my-1 border border-gray-500 rounded cursor-pointer"}
+          class={"p-2 my-1 border border-gray-500 rounded cursor-pointer #{if(@last_clicked_audio == -1, do: "text-orange-500", else: "")}"}
           phx-click="set_audio" phx-value-id={-1}
           >Disable</li>
     </ul>
@@ -61,12 +61,12 @@ defmodule VlxWeb.Components.PlayBackControl do
     <ul>
       <%= for %{id: id, label: label, selected: sel} <- @tracks do %>
         <li
-          class={"p-2 my-1 border border-gray-500 rounded cursor-pointer pl-2 #{if(sel, do: "text-orange-500", else: "")}"}
+          class={"p-2 my-1 border border-gray-500 rounded cursor-pointer pl-2 #{if(@last_clicked_subs == id, do: "text-orange-500", else: "")}"}
           phx-click="set_subs" phx-value-id={id}
           ><%= label %></li>
       <% end %>
       <li
-          class={"p-2 my-1 border border-gray-500 rounded cursor-pointer"}
+          class={"p-2 my-1 border border-gray-500 rounded cursor-pointer #{if(@last_clicked_subs == -1, do: "text-orange-500", else: "")}"}
           phx-click="set_subs" phx-value-id={-1}
           >Disable</li>
     </ul>

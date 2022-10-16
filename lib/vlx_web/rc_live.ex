@@ -15,7 +15,10 @@ defmodule VlxWeb.RCLive do
         page_title: nil,
         sub_tracks: [],
         audio_tracks: [],
-        vlc_status: Vlx.VlcStatus.empty()
+        vlc_status: Vlx.VlcStatus.empty(),
+        last_clicked_audio: nil,
+        last_clicked_subs: nil,
+        last_clicked_path: nil
       )
 
     if connected?(socket) do
@@ -35,8 +38,13 @@ defmodule VlxWeb.RCLive do
       <Navbar.index current={@tab}/>
       <div class="container p-4 mx-auto">
         <%= case @tab do %>
-          <% :playback -> %> <PlayBackControl.index title={@page_title} vlc_status={@vlc_status} />
-          <% :media -> %> <MediaList.index media={@media} />
+          <% :playback -> %> <PlayBackControl.index
+            title={@page_title}
+            vlc_status={@vlc_status}
+            last_clicked_audio={@last_clicked_audio}
+            last_clicked_subs={@last_clicked_subs}
+            />
+          <% :media -> %> <MediaList.index media={@media} last_clicked_path={@last_clicked_path} />
         <% end %>
       </div>
     </div>
@@ -64,17 +72,19 @@ defmodule VlxWeb.RCLive do
     # it's bad that we get the status directly since we will receive it through
     # pubsub. We might as well use it from here.
     {:ok, _} = VlcRemote.play_file(path)
-    {:noreply, assign(socket, tab: :playback)}
+    {:noreply, assign(socket, last_clicked_path: path)}
   end
 
   def handle_event("set_audio", %{"id" => id}, socket) do
-    {:ok, _} = VlcRemote.set_audio_track(String.to_integer(id))
-    {:noreply, socket}
+    id = String.to_integer(id)
+    {:ok, _} = VlcRemote.set_audio_track(id)
+    {:noreply, assign(socket, :last_clicked_audio, id)}
   end
 
   def handle_event("set_subs", %{"id" => id}, socket) do
-    {:ok, _} = VlcRemote.set_subtitle_track(String.to_integer(id))
-    {:noreply, socket}
+    id = String.to_integer(id)
+    {:ok, _} = VlcRemote.set_subtitle_track(id)
+    {:noreply, assign(socket, :last_clicked_subs, id)}
   end
 
   def handle_event("pb_play", _, socket) do
